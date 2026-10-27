@@ -1,0 +1,22 @@
+# 生成过程产物（PRD 流水线中间文件，含本机绝对路径）
+output/
+
+# 应用绑定标记（内含 localDir 本机路径）
+.wbapp_*.genie
+
+# 助手工作目录
+.workbuddy/
+
+# 原始高保真原型：打包产物、可读性差，且含 PRD 已明令删除的功能，不入库
+/人生的路你走到哪了.html
+
+# 旧版需求文档（仅保留最新版）
+/人生的路你走到哪了_PRD_V1.2.docx
+
+# 设计文档的历史归档
+design/_archive/
+
+# 系统文件
+Thumbs.db
+.DS_Store
+desktop.ini
