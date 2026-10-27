@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 受控预览：不让搜索引擎收录（PRD F0） -->
+<meta name="robots" content="noindex, nofollow">
+<title>人生的路你走到哪了</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav__inner">
+    <a class="nav__brand" href="index.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5.5 18.5c0-4 3.6-4.2 6.3-6.6 2.7-2.4 6.2-2.6 6.7-6.4"/>
+        <circle cx="5.5" cy="18.5" r="1.7" fill="currentColor" stroke="none"/>
+        <circle cx="18.5" cy="5.5" r="1.7" fill="currentColor" stroke="none"/>
+      </svg>
+      <span>人生的路你走到哪了</span>
+      <span style="color:var(--ink-3)">.</span>
+    </a>
+
+    <div class="nav__right">
+      <span class="nav__tagline">每一段路，都值得被看见</span>
+      <span class="pill">探索版</span>
+      <a class="nav__add" href="write.html" aria-label="写一段我的经历">+</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <img class="hero__img" src="assets/hero.jpg" alt="">
+  <div class="wrap">
+    <div class="hero__inner">
+      <p class="hero__eyebrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="m9 15 2.2-4.2L15.5 9l-2.2 4.2z"/>
+        </svg>
+        人生没有标准路线
+      </p>
+
+      <h1 class="hero__title">人生的路，<br>你走到哪了？</h1>
+
+      <p class="hero__text">
+        遇到相似的困惑，也许有人走过这段路。<br>
+        读读他们经历了什么、尝试了什么。<br>
+        找到一点共鸣，也找到自己的下一步。
+      </p>
+
+      <a class="btn btn--primary" href="#stories">
+        开始探索
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h14M13 6l6 6-6 6"/>
+        </svg>
+      </a>
+
+      <p class="hero__note">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">
+          <path d="M13 2 4 14h6l-1 8 9-12h-6z"/>
+        </svg>
+        不必赶路，按自己的节奏就好
+      </p>
+    </div>
+  </div>
+
+  <span class="hero__badge">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.7" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/>
+    </svg>
+    每个人都有一段自己的路线
+  </span>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <div class="banner" id="banner" hidden></div>
+
+    <section class="section">
+      <div class="section__head">
+        <h2 class="section__title">你正走在哪一段？</h2>
+        <span class="section__meta">人生路径 · 01</span>
+      </div>
+      <p class="section__desc">选一个最贴近现在的，看看走过这条路的人。</p>
+      <div class="paths" id="paths" role="group" aria-label="按主题选择"></div>
+    </section>
+
+    <section class="section" id="stories">
+      <div class="section__head">
+        <h2 class="section__title">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2.6l1.9 5.6 5.6 1.9-5.6 1.9L12 17.6l-1.9-5.6L4.5 10l5.6-1.9z"/>
+            <path d="M18.6 15.4l.9 2.5 2.5.9-2.5.9-.9 2.5-.9-2.5-2.5-.9 2.5-.9z" opacity=".65"/>
+          </svg>
+          <span><span id="listTitle">升学备考</span> · 路上的故事</span>
+        </h2>
+        <a class="section__more" href="#" id="showAll">全部故事 →</a>
+      </div>
+
+      <div class="toolbar">
+        <div class="search">
+          <span class="search__icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>
+            </svg>
+          </span>
+          <input class="search__input" id="keyword" type="search"
+                 placeholder="搜一个词，比如「考研」「实习」「室友」" autocomplete="off">
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="按状态筛选">
+          <button class="tabs__item" role="tab" aria-selected="true"  data-status="all">全部</button>
+          <button class="tabs__item" role="tab" aria-selected="false" data-status="open">还没走完</button>
+          <button class="tabs__item" role="tab" aria-selected="false" data-status="resolved">走过这一段</button>
+        </div>
+      </div>
+
+      <p class="count" id="count">正在加载…</p>
+      <div class="stories" id="list" aria-live="polite"></div>
+    </section>
+
+    <div class="actions">
+      <a class="btn btn--primary" href="write.html">写下我的这一段</a>
+      <a class="btn btn--ghost" href="me.html">我的经历</a>
+    </div>
+
+    <footer class="foot">
+      内容由参与者自愿分享，观点属作者个人。本站不提供心理或医疗建议；<br>
+      如你正处于危机中，请优先联系身边可信任的人或当地专业机构。
+    </footer>
+
+  </div>
+</main>
+
+<script src="assets/api.js"></script>
+<script>
+const { api, ApiError, cloudReady } = window.Renlu;
+
+/* 开放主题（PRD RS-1：V1 只开 4 个）。改这里要同步 app_config.topic_open */
+const TOPICS = [
+  { code: 'study',    name: '升学备考', desc: '考试、二战、调剂，那些熬着的日子', icon: 'book' },
+  { code: 'job',      name: '找工作',   desc: '简历、面试、offer，第一份工作',     icon: 'case' },
+  { code: 'growth',   name: '自我成长', desc: '想清楚自己是谁、到底要什么',       icon: 'leaf' },
+  { code: 'relation', name: '关系',     desc: '和室友、家人、朋友之间的那些事',   icon: 'chat' },
+];
+
+const ICONS = {
+  book: '<path d="M5 6.2A2.2 2.2 0 0 1 7.2 4H19v16H7.2A2.2 2.2 0 0 1 5 17.8z"/><path d="M9 4v16"/>',
+  case: '<rect x="3.2" y="7.4" width="17.6" height="12.4" rx="2.2"/><path d="M8.6 7.4V5.8a2 2 0 0 1 2-2h2.8a2 2 0 0 1 2 2v1.6"/><path d="M3.2 12.6h17.6"/>',
+  leaf: '<path d="M12 20.5c0-6.4 3.2-11 8.2-12.2-1 8.4-4.4 12.2-8.2 12.2z"/><path d="M12 20.5c0-4.8-2-7.8-5.2-8.8"/>',
+  chat: '<path d="M20.6 11.8a7.8 7.8 0 0 1-7.8 7.8H8l-4 2.6v-4.1a7.8 7.8 0 0 1 3.4-13.9h5.4a7.8 7.8 0 0 1 7.8 7.6z"/>',
+};
+
+const CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+
+/* 云端未接通时的版式占位：不入库，明确标注。每主题 2 条，保证任一选中态都不空 */
+const PLACEHOLDER = [
+  { story_id: 'p1', title: '考研二战，家里不同意', topic_code: 'study', status: 'open', thanks_count: 0,
+    excerpt: '第一年差 12 分。我妈说再考一年就是浪费时间，我爸一句话没说。我自己也说不清是想读书，还是不敢进入社会。' },
+  { story_id: 'p4', title: '二战失败后，我换了一条路', topic_code: 'study', status: 'resolved', thanks_count: 0,
+    excerpt: '出分那天在楼道坐到凌晨。后来去了一家小公司，反而第一次觉得学的东西能用上。现在回头看，那两年不算白费，只是绕了个弯。' },
+  { story_id: 'p2', title: '实习三个月，才知道自己不想做这个', topic_code: 'job', status: 'resolved', thanks_count: 0,
+    excerpt: '专业对口，工资也不差，但每天坐下来就想逃。后来想明白了：我不讨厌这份工作，我讨厌的是把它当成一辈子。' },
+  { story_id: 'p5', title: '第一份工作，干了两周就想跑', topic_code: 'job', status: 'open', thanks_count: 0,
+    excerpt: '领导很客气，同事也不难相处，就是每天做的事让我觉得自己在变钝。不知道该忍还是该走，也怕简历上太难看。' },
+  { story_id: 'p6', title: '我不知道自己想干什么', topic_code: 'growth', status: 'open', thanks_count: 0,
+    excerpt: '别人都有目标，我连想做什么都说不清楚。试过列清单、做测评，最后发现更慌了。' },
+  { story_id: 'p7', title: '把期待降下来之后', topic_code: 'growth', status: 'resolved', thanks_count: 0,
+    excerpt: '以前总觉得要找到「值得一生去做的事」才算活明白。后来接受了自己只是个普通人，反而能开始做点小事了。' },
+  { story_id: 'p3', title: '和室友闹掰之后的那半年', topic_code: 'relation', status: 'resolved', thanks_count: 0,
+    excerpt: '一开始只是不回消息，后来连开门声都让人烦躁。真正缓和是从一次很尴尬的对话开始的，谁都没道歉，但都往后退了一步。' },
+  { story_id: 'p8', title: '和父母冷战了三年', topic_code: 'relation', status: 'open', thanks_count: 0,
+    excerpt: '他们觉得我不听话，我觉得他们不理解。现在回家还是客客气气，谁都不提那件事。' },
+];
+
+const state = { topic: 'study', status: 'all', keyword: '', page: 1 };
+const $ = (id) => document.getElementById(id);
+const elPaths = $('paths');
+const elList = $('list');
+const elCount = $('count');
+const elBanner = $('banner');
+const elTitle = $('listTitle');
+
+/* ---------- 图标 ---------- */
+
+function icon(name) {
+  return `<svg class="path__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+}
+
+/* ---------- 渲染：路径卡 ---------- */
+
+function renderPaths(counts = {}) {
+  elPaths.replaceChildren();
+
+  TOPICS.forEach((t) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'path';
+    btn.dataset.topic = t.code;
+    btn.setAttribute('aria-pressed', String(state.topic === t.code));
+
+    const n = counts[t.code];
+    btn.innerHTML = `
+      ${icon(t.icon)}
+      <p class="path__title">${t.name}${n ? `<span class="path__count">${n}</span>` : ''}</p>
+      <p class="path__desc">${t.desc}</p>
+      <span class="path__arrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 6l6 6-6 6"/>
+        </svg>
+      </span>
+      <span class="path__mark">${CHECK}</span>`;
+
+    btn.addEventListener('click', () => {
+      state.topic = t.code;
+      state.page = 1;
+      renderPaths(counts);
+      syncTitle();
+      load();
+    });
+
+    elPaths.appendChild(btn);
+  });
+}
+
+function syncTitle() {
+  if (!state.topic) { elTitle.textContent = '所有路'; return; }
+  const t = TOPICS.find((x) => x.code === state.topic);
+  elTitle.textContent = t ? t.name : '所有路';
+}
+
+/* ---------- 渲染：故事卡（用户内容一律 textContent） ---------- */
+
+function statusTag(status) {
+  return status === 'resolved'
+    ? '<span class="tag tag--resolved">走过这一段</span>'
+    : '<span class="tag tag--open">还没走完</span>';
+}
+
+function makeCard(s, placeholder) {
+  const a = document.createElement('a');
+  a.className = 'story';
+  a.href = `story.html?id=${encodeURIComponent(s.story_id)}`;
+
+  const head = document.createElement('div');
+  head.className = 'story__head';
+  head.innerHTML = statusTag(s.status);          // 静态标记
+  if (placeholder) {
+    const b = document.createElement('span');
+    b.className = 'badge';
+    b.textContent = '占位';
+    head.appendChild(b);
+  } else if (s.source_type === 'qa') {
+    const b = document.createElement('span');
+    b.className = 'badge';
+    b.textContent = '示例';
+    head.appendChild(b);
+  }
+  a.appendChild(head);
+
+  const h = document.createElement('h3');
+  h.className = 'story__title';
+  h.textContent = s.title;
+  a.appendChild(h);
+
+  const p = document.createElement('p');
+  p.className = 'story__excerpt';
+  p.textContent = s.excerpt || '';
+  a.appendChild(p);
+
+  const meta = document.createElement('div');
+  meta.className = 'story__meta';
+  const who = document.createElement('span');
+  who.textContent = s.author_nickname || '';
+  const cnt = document.createElement('span');
+  cnt.textContent = `${s.thanks_count || 0} 人致谢`;
+  meta.append(who, cnt);
+  a.appendChild(meta);
+
+  return a;
+}
+
+function renderList(items, { placeholder = false } = {}) {
+  elList.replaceChildren();
+
+  if (!items.length) {
+    elList.innerHTML = `
+      <div class="empty">
+        <span class="empty__title">这一段还没有人写</span>
+        你可以是第一个。哪怕只写清楚「当时卡在哪」，对后来的人就是有用的。
+      </div>`;
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  items.forEach((s) => frag.appendChild(makeCard(s, placeholder)));
+  elList.appendChild(frag);
+}
+
+function showBanner(html, warn = false) {
+  elBanner.hidden = false;
+  elBanner.className = warn ? 'banner banner--warn' : 'banner';
+  elBanner.innerHTML = html;
+}
+
+/* ---------- 加载 ---------- */
+
+async function load() {
+  if (!elList.children.length) {
+    elList.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+  }
+
+  try {
+    const t = await api.topics();
+    renderPaths(t.counts || {});
+
+    const r = await api.list({
+      topic: state.topic,
+      status: state.status === 'all' ? null : state.status,
+      keyword: state.keyword || null,
+      page: state.page,
+      size: 10,
+    });
+    elCount.textContent = `共 ${r.total} 条`;
+    renderList(r.items || []);
+  } catch (e) {
+    handleError(e);
+  }
+}
+
+function handleError(e) {
+  if (e instanceof ApiError && e.isCloudMissing) {
+    const items = PLACEHOLDER.filter((s) => !state.topic || s.topic_code === state.topic);
+    const counts = {};
+    PLACEHOLDER.forEach((s) => { counts[s.topic_code] = (counts[s.topic_code] || 0) + 1; });
+    renderPaths(counts);
+    elCount.textContent = `共 ${items.length} 条（版式占位）`;
+    renderList(items, { placeholder: true });
+    showBanner('云服务尚未开通。下面几条是<b>版式占位</b>，不是任何人的真实内容，也不在数据库里；开通后会换成真实投稿。');
+    return;
+  }
+  if (e instanceof ApiError && e.isGateClosed) {
+    renderPaths({});
+    elCount.textContent = '';
+    elList.replaceChildren();
+    showBanner('需要先输入访问口令。门页还没做，这是下一步要补的。', true);
+    return;
+  }
+  elCount.textContent = '没加载出来';
+  elList.innerHTML = `<div class="empty">
+      <span class="empty__title">内容没能加载</span>
+      <span id="errMsg"></span><br>
+      <button class="btn btn--ghost" style="margin-top:16px" onclick="location.reload()">重新加载</button>
+    </div>`;
+  $('errMsg').textContent = e.message || '稍后再试';
+}
+
+/* ---------- 交互 ---------- */
+
+document.querySelectorAll('.tabs__item').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabs__item').forEach((b) => b.setAttribute('aria-selected', 'false'));
+    btn.setAttribute('aria-selected', 'true');
+    state.status = btn.dataset.status;
+    state.page = 1;
+    load();
+  });
+});
+
+$('showAll').addEventListener('click', (ev) => {
+  ev.preventDefault();
+  state.topic = null;
+  state.page = 1;
+  renderPaths({});
+  syncTitle();
+  load();
+});
+
+let timer = null;
+$('keyword').addEventListener('input', (ev) => {
+  clearTimeout(timer);
+  const v = ev.target.value.trim();
+  timer = setTimeout(() => {
+    if (v === state.keyword) return;
+    state.keyword = v;
+    state.page = 1;
+    load();
+  }, 320);
+});
+
+syncTitle();
+renderPaths({});
+load();
+
+if (!cloudReady()) console.info('[首页] 云端客户端未注入，当前为版式占位状态');
+</script>
+</body>
+</html>
