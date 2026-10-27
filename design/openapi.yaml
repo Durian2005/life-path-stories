@@ -1,0 +1,767 @@
+openapi: 3.0.3
+
+info:
+  title: 人生的路你走到哪了 · 接口契约（V1 / A 阶段）
+  version: 1.1.0-a
+  description: |
+    对应 PRD V1.3（修订 2）第 9 章。V1 只覆盖 F0 至 F10，共 14 个接口。
+    举报（A-11）与内容处置后台（A-16 至 A-18）属 V1.1，不在本文件内。
+
+    ⚠️ 传输层已变更（V1.1-a，2026-10-26）
+    平台没有 Node 层，这 14 个 REST 接口不按 URL 实现，而是各自落成一个
+    PostgreSQL 函数 api_*，前端用 cloud.database.rpc('api_xxx', {...}) 调用。
+    因此本文件的 paths / HTTP 方法 / header 不再对应真实网络请求。
+
+    本文件仍然有效的部分（保留它的理由）：
+      - 每个接口的请求字段名、类型、长度与必填规则；
+      - 校验规则与业务错误语义；
+      - 响应 data 的结构。
+
+    已经作废的部分：
+      - paths 与 HTTP 方法（改为函数名，见详细设计 4.1）；
+      - X-Device-Id 请求头（改为 p_token 参数）；
+      - Cookie gate_token（改为 session_token，前端自存）；
+
+    全局约定：
+    1. 统一响应体 { code, message, data }，code = 0 表示成功。HTTP 状态码恒为 200，
+       前端只以 code 判断（详细设计 4.4）。
+    2. 时间一律 ISO 8601 UTC（2026-10-26T14:05:00Z），前端按 UTC+8 展示。不返回本地时间字符串。
+    3. 身份靠 session_token（函数签发，前端存 localStorage），作为 p_token 参数传入。
+       访问门只在 api_gate_verify → api_session_init 两步出现，之后不再校验口令。
+    4. 发布幂等靠 story.request_id（前端生成 UUID，同一表单会话复用同一个）；
+       命中已存在则返回原记录且 data.duplicated = true，不新建。
+    5. 列表 size 上限 10、page 上限 10，最多 100 条；触顶时返回 truncated = true。
+
+servers:
+  - url: https://{host}/api
+    variables:
+      host:
+        default: example.com
+        description: 托管平台分配的域名
+
+tags:
+  - name: 门禁
+  - name: 会话
+  - name: 内容
+  - name: 我的
+  - name: 恢复码
+
+security:
+  - GateCookie: []
+
+paths:
+  /gate/verify:
+    post:
+      tags: [门禁]
+      summary: 校验访问口令，下发访问凭证
+      operationId: verifyGate
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  minLength: 6
+                  maxLength: 32
+      responses:
+        '200':
+          description: 口令正确，Set-Cookie 下发 gate_token（HttpOnly, Secure, SameSite=Lax, 30 天）
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+              description: gate_token=...; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000; Path=/
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '403':
+          description: 口令不正确（不区分「错误」与「其他原因」，统一文案）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 40301, message: 口令不正确, data: null }
+        '429':
+          description: 同一 IP 10 分钟内失败 10 次，锁定 30 分钟
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 42903, message: 尝试次数过多，请稍后再试, data: null }
+
+  /session/init:
+    post:
+      tags: [会话]
+      summary: 确认或建立设备身份
+      description: |
+        请求头带 X-Device-Id 时校验其有效性；缺失或无效时创建空白身份，
+        并在响应头 X-Device-Id 回写新的标识。前端应始终以响应头为准。
+      operationId: initSession
+      security:
+        - GateCookie: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdOptional'
+      responses:
+        '200':
+          description: 当前身份
+          headers:
+            X-Device-Id:
+              schema: { type: string }
+              description: 服务端认定的设备标识（前端必须以此为准并持久化）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Identity' }
+        '403':
+          $ref: '#/components/responses/GateRequired'
+        '429':
+          description: 同一 IP 24 小时内新建身份超过 20 个
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 42906, message: 操作过于频繁, data: null }
+
+  /topics:
+    get:
+      tags: [内容]
+      summary: 主题列表与条数
+      description: 条数只受 status 筛选影响，不受 keyword 影响，且排除示例内容（DC-17）。
+      operationId: listTopics
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, resolved], default: open }
+          description: 仅用于计算 count，不改变返回的主题集合
+      responses:
+        '200':
+          description: 主题列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Topic' }
+        '403':
+          $ref: '#/components/responses/GateRequired'
+
+  /stories:
+    get:
+      tags: [内容]
+      summary: 列表与搜索
+      operationId: listStories
+      parameters:
+        - name: topic
+          in: query
+          schema: { type: string }
+          description: 主题编码；留空表示不限主题
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, resolved] }
+          description: 留空表示不限状态
+        - name: keyword
+          in: query
+          schema: { type: string, minLength: 1, maxLength: 40 }
+          description: 只匹配标题与正文，不匹配昵称；多词以空格分隔按「且」处理
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 10, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 10, default: 10 }
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/StoryPage' }
+        '403':
+          $ref: '#/components/responses/GateRequired'
+    post:
+      tags: [内容]
+      summary: 发布一条经历
+      operationId: createStory
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdRequired'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StoryCreate' }
+      responses:
+        '200':
+          description: 发布成功，返回新内容的 id 与恢复码（仅首次发布时 data.recovery_code 非空）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/StoryCreated' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/DeviceRequired'
+        '403':
+          $ref: '#/components/responses/GateRequired'
+        '429':
+          description: 同一设备 10 分钟内发布超过 3 条
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 42901, message: 发布太频繁，稍后再试, data: null }
+
+  /stories/{id}:
+    parameters:
+      - $ref: '#/components/parameters/StoryId'
+    get:
+      tags: [内容]
+      summary: 详情
+      description: |
+        按状态返回不同结构：
+        - public 且 open/resolved：200，返回全字段
+        - private 且本人：200，返回全字段
+        - private 且非本人：404 + 40401，与「不存在」完全一致（防探测）
+        - hidden：200，data 只有 id / status / notice，**不含任何正文**
+        - deleted：404 + 40401
+        前端必须按 data.status 分支，不要按 HTTP 状态码分支。
+      operationId: getStory
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdOptional'
+      responses:
+        '200':
+          description: 详情或「处理中」占位
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        oneOf:
+                          - $ref: '#/components/schemas/StoryDetail'
+                          - $ref: '#/components/schemas/HiddenNotice'
+        '403':
+          $ref: '#/components/responses/GateRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [内容]
+      summary: 编辑标题、正文与标签（不改状态）
+      operationId: updateStory
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdRequired'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StoryUpdate' }
+      responses:
+        '200':
+          description: 更新成功，updated_at 变化，created_at 不变
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/DeviceRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 内容状态已变化（如编辑期间被隐藏）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 40901, message: 内容状态已变化，请刷新, data: null }
+    delete:
+      tags: [内容]
+      summary: 软删除
+      operationId: deleteStory
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdRequired'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: 已删除（deleted_at 写入，不可恢复）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '401':
+          $ref: '#/components/responses/DeviceRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /stories/{id}/resolve:
+    parameters:
+      - $ref: '#/components/parameters/StoryId'
+    post:
+      tags: [内容]
+      summary: 补写「后来」，状态转 resolved
+      description: 只允许作者本人、且当前状态为 open，且此前未补写过。
+      operationId: resolveStory
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdRequired'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body_after]
+              properties:
+                body_after: { type: string, minLength: 50, maxLength: 2000 }
+      responses:
+        '200':
+          description: 补写成功，status → resolved，resolved_at 写入
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Envelope' }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/DeviceRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 已补写过或被隐藏
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 40901, message: 这条已经补过了, data: null }
+
+  /stories/{id}/thanks:
+    parameters:
+      - $ref: '#/components/parameters/StoryId'
+    post:
+      tags: [内容]
+      summary: 致谢（不可撤销）
+      description: |
+        同一设备对同一条最多一次，由唯一索引保证。重复提交返回 200（幂等），
+        data.thanks_count 为当前计数，data.thanked 恒为 true。
+        作者不能给自己的内容致谢（返回 410 与 41001）；
+        示例内容（source_type = qa）不接收致谢，同样返回 410 与 41001。
+      operationId: thankStory
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdRequired'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: 致谢成功或此前已致谢
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          thanked: { type: boolean }
+                          thanks_count: { type: integer }
+        '401':
+          $ref: '#/components/responses/DeviceRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: 内容状态已变化（隐藏或删除）或为示例内容
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 41001, message: 这条内容状态已变化, data: null }
+
+  /me/stories:
+    get:
+      tags: [我的]
+      summary: 我的经历
+      description: 只返回 author_id 与当前身份一致的内容，包含 public、private、hidden；不含 deleted。按 updated_at 倒序。
+      operationId: listMyStories
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdRequired'
+      responses:
+        '200':
+          description: 我的内容列表（不分页，V1 上限 100 条）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/MyStoryItem' }
+        '401':
+          $ref: '#/components/responses/DeviceRequired'
+        '403':
+          $ref: '#/components/responses/GateRequired'
+
+  /me/recovery-code:
+    get:
+      tags: [恢复码]
+      summary: 查看当前恢复码
+      description: 返回完整 12 位码。前端必须先二次确认才展示。
+      operationId: getRecoveryCode
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdRequired'
+      responses:
+        '200':
+          description: 恢复码
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          recovery_code: { type: string, pattern: '^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{12}$' }
+                          created_at: { type: string, format: date-time }
+        '401':
+          $ref: '#/components/responses/DeviceRequired'
+        '403':
+          $ref: '#/components/responses/GateRequired'
+
+  /me/recovery-code/reset:
+    post:
+      tags: [恢复码]
+      summary: 重置恢复码
+      description: 旧码立即失效，生成新码。前端必须在拿到新码后要求用户确认「我已保存」才能离开。
+      operationId: resetRecoveryCode
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdRequired'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: 新码
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          recovery_code: { type: string }
+        '401':
+          $ref: '#/components/responses/DeviceRequired'
+        '403':
+          $ref: '#/components/responses/GateRequired'
+
+  /recovery/claim:
+    post:
+      tags: [恢复码]
+      summary: 认领迁移（把身份迁到当前设备）
+      description: |
+        成功后在**同一事务内**完成：把目标 user 的 device_id 改为当前设备标识 → 生成新码 → 返回新码。
+        原设备的标识随即失效，其下次请求会被当作新设备（读接口自动建空白身份）。
+        失败一律返回 40103，不区分「码不存在 / 已使用 / 格式错误」，避免探测。
+      operationId: claimRecovery
+      security:
+        - GateCookie: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdRequired'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  minLength: 12
+                  maxLength: 12
+                  description: 前端去除空格并转大写后提交
+      responses:
+        '200':
+          description: 迁移成功，返回新码与新身份
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user_id: { type: integer, format: int64 }
+                          nickname: { type: string }
+                          new_code: { type: string }
+        '401':
+          description: 恢复码不正确或已被使用
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 40103, message: 恢复码不正确或已被使用, data: null }
+        '429':
+          description: 同一 IP 10 分钟内失败 5 次，锁定 30 分钟
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: 42902, message: 尝试次数过多，请稍后再试, data: null }
+
+components:
+
+  securitySchemes:
+    GateCookie:
+      type: apiKey
+      in: cookie
+      name: gate_token
+      description: 通过 POST /gate/verify 获取，HttpOnly，有效期 30 天
+
+  parameters:
+    DeviceIdOptional:
+      name: X-Device-Id
+      in: header
+      required: false
+      schema: { type: string, maxLength: 40 }
+      description: 缺失时读接口自动建号并以响应头回写
+    DeviceIdRequired:
+      name: X-Device-Id
+      in: header
+      required: true
+      schema: { type: string, maxLength: 40 }
+      description: 写接口必填，缺失返回 40101
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: true
+      schema: { type: string, maxLength: 64 }
+      description: 幂等键，同一表单会话复用同一个值，24 小时内重复提交返回首次结果
+    StoryId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+
+  responses:
+    GateRequired:
+      description: 未通过访问门
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: 40301, message: 口令不正确, data: null }
+    DeviceRequired:
+      description: 写接口缺少设备标识
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: 40101, message: 设备标识缺失, data: null }
+    NotFound:
+      description: 不存在、无权访问或已删除（三者返回完全一致，防探测）
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: 40401, message: 这条内容不存在或已被删除, data: null }
+    BadRequest:
+      description: 参数不合法
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: 40001, message: 标题至少 4 个字, data: null }
+
+  schemas:
+
+    Envelope:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: ok }
+        data: { nullable: true }
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        data: { nullable: true }
+
+    Identity:
+      type: object
+      properties:
+        device_id: { type: string }
+        user_id: { type: integer, format: int64 }
+        nickname: { type: string }
+
+    Topic:
+      type: object
+      properties:
+        topic_code: { type: string, example: study }
+        name: { type: string, example: 升学备考 }
+        count:
+          type: integer
+          description: 该主题下已发布内容条数，**不含示例内容**
+        open:
+          type: boolean
+          description: 是否开放（达到 5 条门槛为 true）
+
+    StoryListItem:
+      type: object
+      description: 公开列表项。不含 visibility 字段。
+      properties:
+        id: { type: integer, format: int64 }
+        title: { type: string }
+        summary: { type: string, description: 正文前 60 字 }
+        status: { $ref: '#/components/schemas/StoryStatus' }
+        topic_code: { type: string }
+        life_stage: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+          maxItems: 3
+        author_nickname: { type: string }
+        created_at: { type: string, format: date-time }
+        thanks_count: { type: integer }
+        updated:
+          type: boolean
+          description: 服务端判定 resolved_at 晚于 created_at；前端不得自行计算
+        is_sample: { type: boolean }
+
+    StoryPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/StoryListItem' }
+        total: { type: integer, description: 当前筛选条件下的总条数（含示例时仍排除示例） }
+        page: { type: integer }
+        size: { type: integer }
+        has_more: { type: boolean }
+        truncated:
+          type: boolean
+          description: 是否因触顶 100 条被截断
+
+    StoryDetail:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        title: { type: string }
+        body_before: { type: string, description: 「当时」区块 }
+        body_after:
+          type: string
+          nullable: true
+          description: 「后来」区块，open 状态为 null
+        status: { $ref: '#/components/schemas/StoryStatus' }
+        visibility: { type: string, enum: [public, private] }
+        topic_code: { type: string }
+        life_stage: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        author_nickname: { type: string }
+        created_at: { type: string, format: date-time }
+        resolved_at: { type: string, format: date-time, nullable: true }
+        thanks_count: { type: integer }
+        updated: { type: boolean }
+        thanked: { type: boolean, description: 当前设备是否已致谢 }
+        is_author: { type: boolean }
+        is_sample: { type: boolean }
+        notice:
+          type: string
+          nullable: true
+          description: 情绪提示条文案（配置项，可能为空）
+
+    HiddenNotice:
+      type: object
+      description: hidden 状态的详情占位，不含任何正文
+      properties:
+        id: { type: integer, format: int64 }
+        status: { type: string, enum: [hidden] }
+        notice: { type: string, example: 该内容正在处理中，暂时不可阅读 }
+
+    StoryCreate:
+      type: object
+      required: [title, body_before, topic_code, life_stage, nickname, status]
+      properties:
+        title: { type: string, minLength: 4, maxLength: 40 }
+        body_before: { type: string, minLength: 50, maxLength: 2000 }
+        body_after:
+          type: string
+          minLength: 50
+          maxLength: 2000
+          nullable: true
+          description: 仅当 status = resolved 时必填
+        status:
+          type: string
+          enum: [open, resolved]
+          description: 对应第一步的两个按钮
+        topic_code: { type: string }
+        life_stage: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+          maxItems: 3
+        nickname: { type: string, minLength: 2, maxLength: 12 }
+        visibility:
+          type: string
+          enum: [public, private]
+          default: public
+
+    StoryUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 4, maxLength: 40 }
+        body_before: { type: string, minLength: 50, maxLength: 2000 }
+        body_after: { type: string, minLength: 50, maxLength: 2000, nullable: true }
+        tags:
+          type: array
+          items: { type: string }
+          maxItems: 3
+
+    StoryCreated:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        recovery_code:
+          type: string
+          nullable: true
+          description: 仅该身份首次发布时返回，其余情况为 null
+        is_first_post: { type: boolean }
+
+    MyStoryItem:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        title: { type: string }
+        status: { $ref: '#/components/schemas/StoryStatus' }
+        visibility: { type: string, enum: [public, private] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        days_kept: { type: integer, description: 已存放天数，前端不自行计算 }
+        can_resolve: { type: boolean, description: 是否可补写（open 且未补写过） }
+        can_edit: { type: boolean }
+        can_delete: { type: boolean }
+
+    StoryStatus:
+      type: string
+      enum: [open, resolved, hidden, deleted]
