@@ -236,7 +236,7 @@ function statusTag(status) {
 function makeCard(s, placeholder) {
   const a = document.createElement('a');
   a.className = 'story';
-  a.href = `story.html?id=${encodeURIComponent(s.story_id)}`;
+  a.href = `story.html?id=${encodeURIComponent(s.id)}`;
 
   const head = document.createElement('div');
   head.className = 'story__head';
@@ -261,7 +261,7 @@ function makeCard(s, placeholder) {
 
   const p = document.createElement('p');
   p.className = 'story__excerpt';
-  p.textContent = s.excerpt || '';
+  p.textContent = s.summary || '';
   a.appendChild(p);
 
   const meta = document.createElement('div');
