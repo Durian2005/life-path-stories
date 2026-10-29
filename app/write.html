@@ -31,8 +31,8 @@
   <div class="wrap wrap--read">
 
     <header class="write__head">
-      <h1 class="write__title">写下你的这一段</h1>
-      <p class="write__sub">不用写得完整，也不用给结论。<br>当时卡在哪、试过什么，对同路的人就是有用的。</p>
+      <h1 class="write__title" id="pageTitle">写下你的这一段</h1>
+      <p class="write__sub" id="pageSub">不用写得完整，也不用给结论。<br>当时卡在哪、试过什么，对同路的人就是有用的。</p>
     </header>
 
     <!-- 首次进入的合并确认：年满 18 岁 + 内容会公开展示 -->
@@ -59,7 +59,7 @@
         <div class="chips" id="topics" role="group" aria-label="选择主题"></div>
       </div>
 
-      <div class="field">
+      <div class="field" id="statusField">
         <label class="field__label">现在是什么状态</label>
         <div class="choice" role="group" aria-label="选择状态">
           <button class="choice__item" type="button" data-status="open" aria-pressed="true">
@@ -71,6 +71,12 @@
             <span class="choice__desc">回头看，能讲清发生了什么</span>
           </button>
         </div>
+      </div>
+
+      <!-- 编辑模式下状态不可改，这里换成一句说明 -->
+      <div class="field" id="statusFixed" hidden>
+        <label class="field__label">现在是什么状态</label>
+        <p class="field__fixed" id="statusFixedText"></p>
       </div>
 
       <!-- 2 正文 -->
@@ -172,6 +178,10 @@ const KEY_AGREE = 'renlu.agree';
 const $ = (id) => document.getElementById(id);
 const state = { topic: 'study', status: 'open', vis: 'public', tags: new Set() };
 
+/* 带 ?id= 进来就是编辑，不带就是新写。两种模式共用同一套表单，
+   差异只在：预填、状态不可改、提交走 update。 */
+const editId = new URLSearchParams(location.search).get('id');
+
 /* ---------- 主题 ---------- */
 
 const elTopics = $('topics');
@@ -197,6 +207,7 @@ TAGS.forEach(([code, name]) => {
   b.type = 'button';
   b.className = 'chip chip--tiny';
   b.textContent = name;
+  b.dataset.code = code;
   b.setAttribute('aria-pressed', 'false');
   b.addEventListener('click', () => {
     if (state.tags.has(code)) {
@@ -269,7 +280,8 @@ $('form').addEventListener('submit', async (e) => {
   e.preventDefault();
   $('formErr').textContent = '';
 
-  if (!agreed()) { fail('先把上面的两项确认勾上'); return; }
+  // 编辑模式不显示确认区（内容早就发过了），这里不能再拦
+  if (!editId && !agreed()) { fail('先把上面的两项确认勾上'); return; }
 
   const title = $('title').value.trim();
   const before = $('before').value.trim();
@@ -296,20 +308,89 @@ $('form').addEventListener('submit', async (e) => {
 
   const btn = $('btnSubmit');
   btn.disabled = true;
-  btn.textContent = '发布中…';
+  btn.textContent = editId ? '保存中…' : '发布中…';
   try {
+    if (editId) {
+      await api.update(editId, payload);
+      location.replace(`story.html?id=${encodeURIComponent(editId)}`);
+      return;
+    }
     const d = await api.create(payload);
     location.replace(`story.html?id=${encodeURIComponent(d.id)}`);
   } catch (ex) {
     if (ex instanceof ApiError) {
       if (ex.isGateClosed || ex.isAuthLost) { location.href = 'gate.html'; return; }
       if (ex.isRateLimited) { fail('发得有点快，歇十几分钟再发'); return; }
+      if (ex.code === 40901) { fail('这条内容的状态变了，刷新页面看看'); return; }
     }
-    fail((ex && ex.message) || '没能发布，稍后再试');
+    fail((ex && ex.message) || (editId ? '没能保存，稍后再试' : '没能发布，稍后再试'));
     btn.disabled = false;
-    btn.textContent = '发布这一段';
+    btn.textContent = editId ? '保存修改' : '发布这一段';
   }
 });
+
+/* ---------- 编辑模式：预填 ---------- */
+
+function setPressed(selector, attr, value) {
+  document.querySelectorAll(selector).forEach((el) => {
+    el.setAttribute('aria-pressed', String(el.dataset[attr] === value));
+  });
+}
+
+function refreshCounts() {
+  ['title', 'before', 'after'].forEach((id) => {
+    const n = $(id).value.trim().length;
+    $(id + 'Count').textContent = String(n);
+  });
+}
+
+async function initEdit() {
+  if (!editId) return;
+
+  $('agree').hidden = true;
+  $('pageTitle').textContent = '修改这一段';
+  $('pageSub').textContent = '改完保存即可。状态不能在这里改——补「后来」请在详情页操作。';
+  $('btnSubmit').textContent = '保存修改';
+
+  let s;
+  try {
+    s = await api.detail(editId);
+  } catch (e) {
+    $('formErr').textContent = (e && e.message) || '没能读取这条内容';
+    $('form').hidden = true;
+    return;
+  }
+
+  $('title').value = s.title || '';
+  $('before').value = s.body_before || '';
+  if (s.body_after) $('after').value = s.body_after;
+  $('stage').value = s.life_stage || 'college';
+
+  state.topic = s.topic_code;
+  state.status = s.status;
+  state.vis = s.visibility || 'public';
+  (s.tags || []).forEach((t) => state.tags.add(t));
+
+  setPressed('#topics .chip', 'code', state.topic);
+  setPressed('.choice__item[data-vis]', 'vis', state.vis);
+
+  // 状态固定：显示为一行说明，不是可选项
+  $('statusField').hidden = true;
+  $('statusFixed').hidden = false;
+  $('statusFixedText').textContent = s.status === 'resolved'
+    ? '走过这一段了。要修改「后来」的内容，改下面那一栏即可。'
+    : '还没走完。之后想补「后来」，在详情页点「补上后来」。';
+
+  $('afterField').hidden = s.status !== 'resolved';
+  [...$('tags').children].forEach((b) => {
+    b.setAttribute('aria-pressed', String(state.tags.has(b.dataset.code)));
+  });
+
+  refreshCounts();
+  $('nickname').placeholder = '留空则沿用现在的昵称';
+}
+
+initEdit();
 </script>
 </body>
 </html>

@@ -90,13 +90,13 @@
       </section>
 
       <div class="detail__foot">
-        <span class="thanks" id="thanks">
+        <button class="thanks" id="btnThanks" type="button">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 20.4s-7.6-4.6-7.6-9.6a4.2 4.2 0 0 1 7.6-2.6 4.2 4.2 0 0 1 7.6 2.6c0 5-7.6 9.6-7.6 9.6z"/>
           </svg>
-          <span id="thanksCount">0</span> 人觉得被帮到
-        </span>
+          <span id="thanksText">0 人觉得被帮到</span>
+        </button>
         <a class="detail__more" href="index.html">看别的一段路 →</a>
       </div>
     </article>
@@ -207,7 +207,7 @@ function render(d) {
   hint.textContent = d.is_author
     ? '这是你写的。等后来发生了什么，随时可以回来补上——不着急。'
     : '作者还没写后来。如果你正走在这段路上，可以先看看别人怎么走的。';
-  $('thanksCount').textContent = String(d.thanks_count || 0);
+  syncThanks(d);   // 计数、已致谢状态、能不能点，都交给一个函数决定
 
   // 补写入口只给作者，且只在「还没走完」时给
   $('compose').hidden = !(d.is_author && d.status === 'open');
@@ -228,6 +228,48 @@ function toParagraphs(text) {
       return p;
     });
 }
+
+/* ---------- 致谢 ---------- */
+
+let thanksState = { id: null, count: 0, done: false, can: false };
+
+function syncThanks(d) {
+  thanksState = {
+    id: d.id,
+    count: d.thanks_count || 0,
+    done: Boolean(d.thanked),
+    can: !(d.is_author || d.is_sample || d.status === 'hidden'),
+  };
+  const btn = $('btnThanks');
+  const n = thanksState.count;
+  $('thanksText').textContent = thanksState.done
+    ? `已致谢 · ${n} 人觉得被帮到`
+    : `${n} 人觉得被帮到`;
+  // 示例内容直接不显示入口，别让人点完才知道不行
+  btn.hidden = Boolean(d.is_sample);
+  btn.disabled = !thanksState.can || thanksState.done;
+  btn.classList.toggle('thanks--done', thanksState.done);
+  btn.title = d.is_author ? '不能给自己的内容致谢'
+    : thanksState.done ? '你已经致谢过了' : '';
+}
+
+$('btnThanks').addEventListener('click', async () => {
+  if (!thanksState.can || thanksState.done) return;
+  const btn = $('btnThanks');
+  btn.disabled = true;
+  try {
+    const r = await api.thanks(thanksState.id);
+    thanksState.count = r.thanks_count;
+    thanksState.done = true;
+    $('thanksText').textContent = `已致谢 · ${r.thanks_count} 人觉得被帮到`;
+    btn.classList.add('thanks--done');
+    btn.title = '你已经致谢过了';
+  } catch (e) {
+    if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) { location.href = 'gate.html'; return; }
+    $('thanksText').textContent = `没能致谢：${(e && e.message) || '稍后再试'}`;
+    btn.disabled = false;
+  }
+});
 
 /* ---------- 补写 ---------- */
 
