@@ -20,3 +20,9 @@ design/_archive/
 Thumbs.db
 .DS_Store
 desktop.ini
+
+# 本地接口测试页与临时验证页（含口令明文与调试痕迹，不入库）
+/app/_*.html
+
+# 调试截图
+/_*.png

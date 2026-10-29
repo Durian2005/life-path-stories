@@ -1,0 +1,9 @@
+# 全仓库统一使用 LF，避免 Windows 下编辑器把整个文件改成 CRLF 后产生虚假 diff
+* text=auto eol=lf
+
+# 二进制文件，不做换行符转换
+*.docx binary
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.zip  binary
