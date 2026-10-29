@@ -15,6 +15,7 @@ const KEY_TOKEN = 'renlu.token';
 const KEY_DEVICE = 'renlu.device';
 const KEY_GATE = 'renlu.gate';
 const KEY_REQID = 'renlu.requestId';
+const KEY_NICK = 'renlu.nick';
 
 /** 后端业务码与文案都封装在这里，页面按 code 分支，不解析 message */
 class ApiError extends Error {
@@ -66,6 +67,8 @@ function getDeviceId() {
 }
 
 function setDeviceId(v) { localStorage.setItem(KEY_DEVICE, v); }
+
+function getNickname() { return localStorage.getItem(KEY_NICK) || ''; }
 
 const session = {
   get token() { return localStorage.getItem(KEY_TOKEN) || ''; },
@@ -164,6 +167,8 @@ const api = {
     });
     session.token = d.token;
     if (d.user?.device_id) setDeviceId(d.user.device_id);
+    // 昵称只用于展示，不参与判权；取不到就退回通用文案
+    if (d.user && d.user.nickname) localStorage.setItem(KEY_NICK, d.user.nickname);
     return d;
   },
 
@@ -266,6 +271,6 @@ const api = {
 /* 挂到全局，供普通 <script> 使用。
    不用 ES module 是刻意的：file:// 下浏览器会以 CORS 为由拒绝加载相对模块，
    队友双击打开就看不到任何内容。 */
-global.Renlu = { ApiError, api, session, ensureSession, getDeviceId, setDeviceId, bindCloud, cloudReady };
+global.Renlu = { ApiError, api, session, ensureSession, getDeviceId, setDeviceId, bindCloud, cloudReady, getNickname };
 
 })(window);

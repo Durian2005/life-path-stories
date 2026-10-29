@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>我的经历 · 人生的路你走到哪了</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="nav nav--narrow">
+  <div class="wrap nav__inner">
+    <a class="nav__brand" href="index.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5.5 18.5c0-4 3.6-4.2 6.3-6.6 2.7-2.4 6.2-2.6 6.7-6.4"/>
+        <circle cx="5.5" cy="18.5" r="1.7" fill="currentColor" stroke="none"/>
+        <circle cx="18.5" cy="5.5" r="1.7" fill="currentColor" stroke="none"/>
+      </svg>
+      <span>人生的路你走到哪了</span>
+      <span style="color:var(--ink-3)">.</span>
+    </a>
+    <div class="nav__right">
+      <a class="nav__tagline nav__back" href="index.html">← 回到所有故事</a>
+    </div>
+  </div>
+</nav>
+
+<main class="write-main">
+  <div class="wrap wrap--read">
+
+    <header class="write__head">
+      <h1 class="write__title">我的经历</h1>
+      <p class="write__sub" id="whoami">正在读取…</p>
+    </header>
+
+    <!-- 身份：恢复码是换设备的唯一凭证 -->
+    <section class="idcard">
+      <div class="idcard__head">
+        <h2 class="idcard__title">换设备时用它找回</h2>
+        <span class="idcard__warn">只有这里能看到</span>
+      </div>
+
+      <p class="idcard__desc">
+        你的内容绑在这台浏览器上，不是账号。换手机、清缓存之后，用下面这串码就能把内容接回来。
+      </p>
+
+      <div class="codebox">
+        <code class="codebox__code" id="codeText">•••• •••• ••••</code>
+        <button class="btn btn--ghost btn--sm" id="btnReveal" type="button">查看</button>
+        <button class="btn btn--ghost btn--sm" id="btnCopy" type="button" hidden>复制</button>
+        <button class="btn btn--ghost btn--sm btn--danger" id="btnReset" type="button" hidden>重置</button>
+      </div>
+
+      <p class="idcard__hint" id="codeNote">
+        建议现在就存下来：截图、写在备忘录里，都行。
+      </p>
+
+      <!-- 重置是危险操作，必须二次确认并原样告知后果 -->
+      <div class="danger" id="resetConfirm" hidden>
+        <p class="danger__text">
+          重置后旧码立即失效。<strong>新码只存在于这台设备上</strong>，
+          如果这台设备之后坏了、或者你清了浏览器数据，内容就再也找不回来了。
+        </p>
+        <div class="danger__foot">
+          <button class="btn btn--ghost btn--sm" id="btnResetCancel" type="button">先不重置</button>
+          <button class="btn btn--sm btn--danger" id="btnResetConfirm" type="button">确认重置</button>
+        </div>
+      </div>
+
+      <p class="idcard__err" id="codeErr"></p>
+    </section>
+
+    <!-- 认领：在别人的设备上用旧码接回自己的内容 -->
+    <section class="claim">
+      <button class="claim__toggle" id="btnClaimOpen" type="button" aria-expanded="false">
+        换了设备，用恢复码找回原来的内容
+        <span class="claim__chev">›</span>
+      </button>
+
+      <form class="claim__body" id="claimForm" hidden>
+        <label class="field__label" for="claimCode">输入 12 位恢复码</label>
+        <input class="field__input field__input--code" id="claimCode" type="text"
+               inputmode="latin" autocomplete="off" maxlength="14" placeholder="XXXX-XXXX-XXXX">
+        <p class="field__hint">
+          找回后，这台设备会成为你的新设备，原来那台会自动退出。
+        </p>
+        <p class="field__err" id="claimErr"></p>
+        <div class="claim__foot">
+          <button class="btn btn--primary btn--sm" type="submit" id="btnClaim">找回我的内容</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 我的内容 -->
+    <section class="mine">
+      <div class="mine__head">
+        <h2 class="mine__title">我写过的</h2>
+        <span class="mine__count" id="mineCount"></span>
+      </div>
+      <div class="mine__list" id="mineList"></div>
+      <div class="actions actions--tight">
+        <a class="btn btn--primary" href="write.html">再写一段</a>
+      </div>
+    </section>
+
+    <footer class="foot">
+      内容由参与者自愿分享，观点属作者个人。本站不提供心理或医疗建议；<br>
+      如你正处于危机中，请优先联系身边可信任的人或当地专业机构。
+    </footer>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="assets/cloud-config.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/boot.js"></script>
+<script>
+const { api, ApiError } = window.Renlu;
+const $ = (id) => document.getElementById(id);
+
+let revealed = false;
+
+/* ---------- 工具 ---------- */
+
+function fmtCode(raw) {
+  const s = String(raw || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  return s.replace(/(.{4})(?=.)/g, '$1-');
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function goGate() { location.href = 'gate.html'; }
+
+function handleErr(e, target) {
+  if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) { goGate(); return; }
+  target.textContent = (e && e.message) || '稍后再试';
+}
+
+/* ---------- 身份 ---------- */
+
+async function loadIdentity() {
+  try {
+    const d = await api.recoveryCode();
+    window.__code = d.recovery_code;
+    const nick = window.Renlu.getNickname();
+    $('whoami').textContent = nick
+      ? nick + ' · 下面是找回内容的唯一凭证'
+      : '这台设备上的身份，下面这串码是找回内容的唯一凭证。';
+    if (revealed) $('codeText').textContent = fmtCode(d.recovery_code);
+  } catch (e) {
+    handleErr(e, $('codeErr'));
+  }
+}
+
+$('btnReveal').addEventListener('click', async () => {
+  $('codeErr').textContent = '';
+  if (!window.__code) { await loadIdentity(); }
+  if (!window.__code) return;
+  revealed = true;
+  $('codeText').textContent = fmtCode(window.__code);
+  $('btnReveal').hidden = true;
+  $('btnCopy').hidden = false;
+  $('btnReset').hidden = false;
+  $('codeNote').textContent = '抄下来之后，可以点「重置」换一串新的——旧的那串会立刻作废。';
+});
+
+$('btnCopy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(fmtCode(window.__code));
+    $('btnCopy').textContent = '已复制';
+    setTimeout(() => { $('btnCopy').textContent = '复制'; }, 1600);
+  } catch {
+    $('codeErr').textContent = '复制失败，请手动选中上面的码';
+  }
+});
+
+$('btnReset').addEventListener('click', () => { $('resetConfirm').hidden = false; });
+$('btnResetCancel').addEventListener('click', () => { $('resetConfirm').hidden = true; });
+
+$('btnResetConfirm').addEventListener('click', async () => {
+  $('codeErr').textContent = '';
+  const btn = $('btnResetConfirm');
+  btn.disabled = true;
+  btn.textContent = '生成中…';
+  try {
+    const d = await api.resetRecoveryCode();
+    window.__code = d.recovery_code;
+    $('codeText').textContent = fmtCode(d.recovery_code);
+    $('codeNote').textContent = '已经换成新的了。请重新抄一遍，旧码从现在开始无效。';
+    $('resetConfirm').hidden = true;
+  } catch (e) {
+    handleErr(e, $('codeErr'));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '确认重置';
+  }
+});
+
+/* ---------- 认领 ---------- */
+
+$('btnClaimOpen').addEventListener('click', () => {
+  const form = $('claimForm');
+  const open = form.hidden;
+  form.hidden = !open;
+  $('btnClaimOpen').setAttribute('aria-expanded', String(open));
+  if (open) $('claimCode').focus();
+});
+
+// 输入时自动补连字符，用户不用自己敲
+$('claimCode').addEventListener('input', (e) => {
+  const el = e.target;
+  const pos = el.selectionStart === el.value.length;
+  el.value = fmtCode(el.value).slice(0, 14);
+  if (pos) el.setSelectionRange(el.value.length, el.value.length);
+  $('claimErr').textContent = '';
+});
+
+$('claimForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('claimErr').textContent = '';
+  const raw = $('claimCode').value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  if (raw.length !== 12) { $('claimErr').textContent = '恢复码是 12 位，现在填了 ' + raw.length + ' 位'; return; }
+
+  const btn = $('btnClaim');
+  btn.disabled = true;
+  btn.textContent = '找回中…';
+  try {
+    const d = await api.claim(raw);
+    $('claimErr').textContent = '';
+    $('codeText').textContent = '正在接回内容…';
+    $('whoami').textContent = `已经把 ${d.moved} 条内容接回这台设备，正在刷新…`;
+    setTimeout(() => location.replace('me.html'), 1200);
+  } catch (ex) {
+    // 40103 故意含糊：码不存在 / 已用过 / 格式错，三者同一提示
+    if (ex instanceof ApiError && ex.code === 40901) {
+      $('claimErr').textContent = '这台设备上已经有另一个身份和它的内容，不能直接认领。';
+    } else {
+      handleErr(ex, $('claimErr'));
+    }
+    btn.disabled = false;
+    btn.textContent = '找回我的内容';
+  }
+});
+
+/* ---------- 我的内容 ---------- */
+
+function statusTag(status, visibility) {
+  const map = {
+    open: ['还没走完', 'tag--open'],
+    resolved: ['走过这一段', 'tag--resolved'],
+    hidden: ['处理中', 'tag--plain'],
+  };
+  const [text, cls] = map[status] || ['未知', 'tag--plain'];
+  const wrap = document.createElement('span');
+  wrap.className = `tag ${cls}`;
+  wrap.textContent = text;
+  return wrap;
+}
+
+function makeRow(s) {
+  const row = document.createElement('div');
+  row.className = 'row';
+
+  const a = document.createElement('a');
+  a.className = 'row__link';
+  a.href = `story.html?id=${encodeURIComponent(s.id)}`;
+
+  const top = document.createElement('div');
+  top.className = 'row__top';
+  top.append(statusTag(s.status));
+  if (s.visibility === 'private') {
+    const t = document.createElement('span');
+    t.className = 'tag tag--plain';
+    t.textContent = '仅自己可见';
+    top.append(t);
+  }
+  if (s.is_sample) {
+    const t = document.createElement('span');
+    t.className = 'tag tag--plain';
+    t.textContent = '示例';
+    top.append(t);
+  }
+
+  const h = document.createElement('h3');
+  h.className = 'row__title';
+  h.textContent = s.title;
+
+  const meta = document.createElement('p');
+  meta.className = 'row__meta';
+  const bits = [fmtDate(s.created_at)];
+  if (s.status === 'open') {
+    bits.push(`已经记了 ${s.days_kept || 0} 天`);
+  } else {
+    bits.push(`${s.thanks_count || 0} 人觉得被帮到`);
+  }
+  meta.textContent = bits.join(' · ');
+
+  a.append(top, h, meta);
+  row.append(a, makeOps(s, row));
+  return row;
+}
+
+/* 每行的操作：编辑跳表单，删除要点两次才生效——删内容是不可逆的，
+   一次点击就消失太容易误触 */
+function makeOps(s, row) {
+  const ops = document.createElement('div');
+  ops.className = 'row__ops';
+
+  if (s.can_edit) {
+    const edit = document.createElement('a');
+    edit.className = 'btn btn--sm btn--ghost';
+    edit.href = `write.html?id=${encodeURIComponent(s.id)}`;
+    edit.textContent = '编辑';
+    ops.append(edit);
+  }
+
+  if (s.can_delete) {
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'btn btn--sm btn--danger';
+    del.textContent = '删除';
+
+    let armed = false;
+    let timer = null;
+
+    const disarm = () => {
+      armed = false;
+      del.textContent = '删除';
+      del.classList.remove('row__op--armed');
+    };
+
+    del.addEventListener('click', async () => {
+      if (!armed) {
+        armed = true;
+        del.textContent = '确认删除';
+        del.classList.add('row__op--armed');
+        timer = setTimeout(disarm, 3200);
+        return;
+      }
+      clearTimeout(timer);
+      del.disabled = true;
+      del.textContent = '删除中…';
+      try {
+        await api.remove(s.id);
+        row.remove();
+        const left = $('mineList').querySelectorAll('.row').length;
+        $('mineCount').textContent = left ? `共 ${left} 条` : '';
+        if (!left) loadMine();      // 删空了就切回空状态
+      } catch (e) {
+        disarm();
+        del.disabled = false;
+        handleErr(e, $('whoami'));
+      }
+    });
+    ops.append(del);
+  }
+
+  if (!ops.children.length) ops.hidden = true;
+  return ops;
+}
+
+async function loadMine() {
+  try {
+    const d = await api.myStories({ page: 1, size: 20 });
+    const items = d.items || [];
+    $('mineCount').textContent = items.length ? `共 ${d.total} 条` : '';
+
+    const list = $('mineList');
+    list.replaceChildren();
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      const t = document.createElement('span');
+      t.className = 'empty__title';
+      t.textContent = '你还没写过';
+      empty.append(t, document.createTextNode('写下第一段，之后随时可以回来补「后来」。'));
+      list.append(empty);
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    items.forEach((s) => frag.appendChild(makeRow(s)));
+    list.append(frag);
+  } catch (e) {
+    handleErr(e, $('whoami'));
+  }
+}
+
+loadIdentity();
+loadMine();
+</script>
+</body>
+</html>
