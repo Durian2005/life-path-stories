@@ -78,7 +78,7 @@ CREATE TABLE story (
     CONSTRAINT ck_story_status   CHECK (status IN ('open','resolved','hidden','deleted')),
     CONSTRAINT ck_story_vis      CHECK (visibility IN ('public','private')),
     CONSTRAINT ck_story_source   CHECK (source_type IN ('user','qa')),
-    CONSTRAINT ck_story_topic    CHECK (topic_code IN ('study','job','growth','relation','family','money','body')),
+    CONSTRAINT ck_story_topic    CHECK (topic_code IN ('study','job','growth','relation','daily','family','money','body')),
     CONSTRAINT ck_story_stage    CHECK (life_stage IN ('before_18','college','graduation','early_work','transition')),
     CONSTRAINT ck_story_title_len CHECK (char_length(title) BETWEEN 4 AND 40),
     CONSTRAINT ck_story_b1_len   CHECK (char_length(body_before) BETWEEN 50 AND 2000),
@@ -172,7 +172,7 @@ CREATE TABLE app_config (
     updated_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
     CONSTRAINT ck_config_key CHECK (key IN (
         'gate_pass_hash',      -- 前台口令的 bcrypt/argon2 哈希（pgcrypto: crypt）
-        'topic_open',          -- 开放主题，逗号分隔，如 study,job,growth,relation
+        'topic_open',          -- 开放主题，逗号分隔，如 study,job,growth,relation,daily
         'gate_locked_until'    -- 口令连续失败后的锁定截止时间（ISO 8601）
     ))
 );
