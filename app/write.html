@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>写一段 · 人生的路你走到哪了</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="nav nav--narrow">
+  <div class="wrap nav__inner">
+    <a class="nav__brand" href="index.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5.5 18.5c0-4 3.6-4.2 6.3-6.6 2.7-2.4 6.2-2.6 6.7-6.4"/>
+        <circle cx="5.5" cy="18.5" r="1.7" fill="currentColor" stroke="none"/>
+        <circle cx="18.5" cy="5.5" r="1.7" fill="currentColor" stroke="none"/>
+      </svg>
+      <span>人生的路你走到哪了</span>
+      <span style="color:var(--ink-3)">.</span>
+    </a>
+    <div class="nav__right">
+      <a class="nav__tagline nav__back" href="index.html">← 先不写了</a>
+    </div>
+  </div>
+</nav>
+
+<main class="write-main">
+  <div class="wrap wrap--read">
+
+    <header class="write__head">
+      <h1 class="write__title">写下你的这一段</h1>
+      <p class="write__sub">不用写得完整，也不用给结论。<br>当时卡在哪、试过什么，对同路的人就是有用的。</p>
+    </header>
+
+    <!-- 首次进入的合并确认：年满 18 岁 + 内容会公开展示 -->
+    <section class="agree" id="agree" hidden>
+      <p class="agree__title">开始之前，两件小事</p>
+      <label class="check">
+        <input type="checkbox" id="agreeAge">
+        <span>我已年满 18 周岁</span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="agreePublic">
+        <span>我了解这段内容会公开展示，其他人可以读到</span>
+      </label>
+      <p class="agree__note">
+        不想公开的话，下面可以把可见范围改成「仅自己可见」。
+      </p>
+    </section>
+
+    <form id="form" class="form" novalidate>
+
+      <!-- 1 走在哪一段 -->
+      <div class="field">
+        <label class="field__label" for="topic">走在哪一段</label>
+        <div class="chips" id="topics" role="group" aria-label="选择主题"></div>
+      </div>
+
+      <div class="field">
+        <label class="field__label">现在是什么状态</label>
+        <div class="choice" role="group" aria-label="选择状态">
+          <button class="choice__item" type="button" data-status="open" aria-pressed="true">
+            <span class="choice__title">还没走完</span>
+            <span class="choice__desc">还在里面，说不清后来</span>
+          </button>
+          <button class="choice__item" type="button" data-status="resolved" aria-pressed="false">
+            <span class="choice__title">走过这一段了</span>
+            <span class="choice__desc">回头看，能讲清发生了什么</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2 正文 -->
+      <div class="field">
+        <label class="field__label" for="title">起个标题</label>
+        <input class="field__input" id="title" type="text" maxlength="40"
+               placeholder="比如：考研二战，家里不同意">
+        <p class="field__hint"><span id="titleCount">0</span> / 40　<span class="field__err" id="titleErr"></span></p>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="before">当时发生了什么</label>
+        <textarea class="field__input field__input--area" id="before" rows="8" maxlength="2000"
+                  placeholder="从卡住的那一刻写起就行。发生了什么、你怎么想、身边人怎么说。"></textarea>
+        <p class="field__hint"><span id="beforeCount">0</span> / 2000　至少 50 字　<span class="field__err" id="beforeErr"></span></p>
+      </div>
+
+      <div class="field" id="afterField" hidden>
+        <label class="field__label" for="after">后来呢</label>
+        <textarea class="field__input field__input--area" id="after" rows="7" maxlength="2000"
+                  placeholder="不用是圆满的结局。想通了什么、换了什么做法、或者只是熬过去了，都算。"></textarea>
+        <p class="field__hint"><span id="afterCount">0</span> / 2000　至少 50 字　<span class="field__err" id="afterErr"></span></p>
+      </div>
+
+      <!-- 3 补充信息 -->
+      <div class="field">
+        <label class="field__label" for="stage">那大概是什么时候</label>
+        <select class="field__input field__input--select" id="stage">
+          <option value="college">大学阶段</option>
+          <option value="before_18">18 岁以前</option>
+          <option value="graduation">毕业前后</option>
+          <option value="early_work">初入职场</option>
+          <option value="transition">职业转型</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label">贴几个标签（最多 3 个，可不选）</label>
+        <div class="chips chips--small" id="tags" role="group" aria-label="选择标签"></div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="nickname">别人看到的名字</label>
+        <input class="field__input" id="nickname" type="text" maxlength="12"
+               placeholder="2 到 12 个字，不填就用默认名字">
+        <p class="field__hint">昵称全站唯一，重名会提示你换一个。写完之后只能再改一次。</p>
+      </div>
+
+      <div class="field">
+        <label class="field__label">谁能看到</label>
+        <div class="choice choice--mini" role="group" aria-label="可见范围">
+          <button class="choice__item" type="button" data-vis="public" aria-pressed="true">
+            <span class="choice__title">公开</span>
+            <span class="choice__desc">别人能在列表里读到</span>
+          </button>
+          <button class="choice__item" type="button" data-vis="private" aria-pressed="false">
+            <span class="choice__title">仅自己可见</span>
+            <span class="choice__desc">只留给自己看</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="form__err" id="formErr"></p>
+
+      <div class="form__foot">
+        <p class="form__note">发布后可以再回来补写「后来」，也可以随时删除。</p>
+        <button class="btn btn--primary" type="submit" id="btnSubmit">发布这一段</button>
+      </div>
+    </form>
+
+    <footer class="foot">
+      内容由参与者自愿分享，观点属作者个人。本站不提供心理或医疗建议；<br>
+      如你正处于危机中，请优先联系身边可信任的人或当地专业机构。
+    </footer>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="assets/cloud-config.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/boot.js"></script>
+<script>
+const { api, ApiError } = window.Renlu;
+
+const TOPICS = [
+  { code: 'study',    name: '升学备考' },
+  { code: 'job',      name: '找工作' },
+  { code: 'growth',   name: '自我成长' },
+  { code: 'relation', name: '关系' },
+  { code: 'daily',    name: '过日子' },
+];
+const TAGS = [
+  ['exam', '备考'], ['jobhunt', '求职'], ['intern', '实习'], ['major', '专业'],
+  ['social', '社交'], ['mood', '情绪'], ['family', '家庭'], ['time', '时间'],
+];
+const KEY_AGREE = 'renlu.agree';
+
+const $ = (id) => document.getElementById(id);
+const state = { topic: 'study', status: 'open', vis: 'public', tags: new Set() };
+
+/* ---------- 主题 ---------- */
+
+const elTopics = $('topics');
+TOPICS.forEach((t) => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'chip';
+  b.dataset.code = t.code;
+  b.textContent = t.name;
+  b.setAttribute('aria-pressed', String(state.topic === t.code));
+  b.addEventListener('click', () => {
+    state.topic = t.code;
+    [...elTopics.children].forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.code === t.code)));
+  });
+  elTopics.append(b);
+});
+
+/* ---------- 标签 ---------- */
+
+const elTags = $('tags');
+TAGS.forEach(([code, name]) => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'chip chip--tiny';
+  b.textContent = name;
+  b.setAttribute('aria-pressed', 'false');
+  b.addEventListener('click', () => {
+    if (state.tags.has(code)) {
+      state.tags.delete(code);
+      b.setAttribute('aria-pressed', 'false');
+      return;
+    }
+    if (state.tags.size >= 3) return;      // 上限 3 个，静默忽略比报错更省事
+    state.tags.add(code);
+    b.setAttribute('aria-pressed', 'true');
+  });
+  elTags.append(b);
+});
+
+/* ---------- 状态与可见范围（互斥按钮组） ---------- */
+
+function bindGroup(selector, key, attr) {
+  const items = [...document.querySelectorAll(selector)];
+  items.forEach((b) => {
+    b.addEventListener('click', () => {
+      state[key] = b.dataset[attr];
+      items.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      if (key === 'status') {
+        const need = state.status === 'resolved';
+        $('afterField').hidden = !need;
+        if (need) $('after').focus();
+      }
+    });
+  });
+}
+bindGroup('.choice__item[data-status]', 'status', 'status');
+bindGroup('.choice__item[data-vis]', 'vis', 'vis');
+
+/* ---------- 字数统计 ---------- */
+
+function bindCount(inputId, countId, errId) {
+  const el = $(inputId);
+  el.addEventListener('input', () => {
+    $(countId).textContent = String(el.value.trim().length);
+    if (errId) $(errId).textContent = '';
+    $('formErr').textContent = '';
+  });
+}
+bindCount('title', 'titleCount', 'titleErr');
+bindCount('before', 'beforeCount', 'beforeErr');
+bindCount('after', 'afterCount', 'afterErr');
+
+/* ---------- 首次确认 ---------- */
+
+const agreed = () => localStorage.getItem(KEY_AGREE) === '1';
+if (!agreed()) $('agree').hidden = false;
+
+function rememberAgree() {
+  if ($('agreeAge').checked && $('agreePublic').checked) {
+    localStorage.setItem(KEY_AGREE, '1');
+    $('agree').hidden = true;
+  }
+}
+$('agreeAge').addEventListener('change', rememberAgree);
+$('agreePublic').addEventListener('change', rememberAgree);
+
+/* ---------- 提交 ---------- */
+
+function fail(msg) {
+  $('formErr').textContent = msg;
+  $('formErr').scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('formErr').textContent = '';
+
+  if (!agreed()) { fail('先把上面的两项确认勾上'); return; }
+
+  const title = $('title').value.trim();
+  const before = $('before').value.trim();
+  const after = $('after').value.trim();
+
+  if (title.length < 4) { fail('标题至少 4 个字'); return; }
+  if (before.length < 50) { fail(`「当时」至少 50 个字（现在 ${before.length} 个）`); return; }
+  if (state.status === 'resolved' && after.length < 50) {
+    fail(`「后来」至少 50 个字（现在 ${after.length} 个）`);
+    return;
+  }
+
+  const payload = {
+    title,
+    body_before: before,
+    body_after: state.status === 'resolved' ? after : null,
+    status: state.status,
+    topic_code: state.topic,
+    life_stage: $('stage').value,
+    tags: [...state.tags],
+    nickname: $('nickname').value.trim(),
+    visibility: state.vis,
+  };
+
+  const btn = $('btnSubmit');
+  btn.disabled = true;
+  btn.textContent = '发布中…';
+  try {
+    const d = await api.create(payload);
+    location.replace(`story.html?id=${encodeURIComponent(d.id)}`);
+  } catch (ex) {
+    if (ex instanceof ApiError) {
+      if (ex.isGateClosed || ex.isAuthLost) { location.href = 'gate.html'; return; }
+      if (ex.isRateLimited) { fail('发得有点快，歇十几分钟再发'); return; }
+    }
+    fail((ex && ex.message) || '没能发布，稍后再试');
+    btn.disabled = false;
+    btn.textContent = '发布这一段';
+  }
+});
+</script>
+</body>
+</html>

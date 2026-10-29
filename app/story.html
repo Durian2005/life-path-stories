@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>一段路 · 人生的路你走到哪了</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="nav nav--narrow">
+  <div class="wrap nav__inner">
+    <a class="nav__brand" href="index.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5.5 18.5c0-4 3.6-4.2 6.3-6.6 2.7-2.4 6.2-2.6 6.7-6.4"/>
+        <circle cx="5.5" cy="18.5" r="1.7" fill="currentColor" stroke="none"/>
+        <circle cx="18.5" cy="5.5" r="1.7" fill="currentColor" stroke="none"/>
+      </svg>
+      <span>人生的路你走到哪了</span>
+      <span style="color:var(--ink-3)">.</span>
+    </a>
+    <div class="nav__right">
+      <a class="nav__tagline nav__back" href="index.html">← 回到所有故事</a>
+      <a class="nav__add" href="write.html" aria-label="写一段我的经历">+</a>
+    </div>
+  </div>
+</nav>
+
+<main class="detail-main">
+  <div class="wrap wrap--read">
+
+    <!-- 加载中：用骨架占位，避免高度跳动 -->
+    <div id="loading" class="skel">
+      <div class="skel__line skel__line--sm"></div>
+      <div class="skel__line skel__line--lg"></div>
+      <div class="skel__line"></div>
+      <div class="skel__line"></div>
+      <div class="skel__line skel__line--md"></div>
+    </div>
+
+    <!-- 正常内容 -->
+    <article id="article" hidden>
+      <p class="crumb" id="crumb"></p>
+
+      <div class="detail__tags" id="tags"></div>
+      <h1 class="detail__title" id="title"></h1>
+
+      <div class="detail__meta">
+        <span id="author"></span>
+        <span class="dot">·</span>
+        <time id="created"></time>
+        <span class="dot">·</span>
+        <span id="stage"></span>
+      </div>
+
+      <div class="prose" id="prose">
+        <section class="block" id="blockBefore">
+          <h2 class="block__title">当时</h2>
+          <div class="block__body" id="bodyBefore"></div>
+        </section>
+
+        <section class="block" id="blockAfter" hidden>
+          <h2 class="block__title">后来</h2>
+          <div class="block__body" id="bodyAfter"></div>
+        </section>
+      </div>
+
+      <!-- open 态：作者还没写后来 -->
+      <p class="hint" id="openHint" hidden>
+        作者还没写后来。如果你正走在这段路上，可以先看看别人怎么走的。
+      </p>
+
+      <!-- 作者专属：补写入口 -->
+      <section class="compose" id="compose" hidden>
+        <button class="btn btn--primary" id="btnOpenResolve" type="button">补上「后来」</button>
+        <form class="compose__form" id="resolveForm" hidden>
+          <label class="compose__label" for="afterInput">后来发生了什么？</label>
+          <textarea class="field field--area" id="afterInput" rows="7"
+                    placeholder="不用写得完整。哪怕只是「现在能睡着了」，对同路的人也是有用的。"
+                    maxlength="2000"></textarea>
+          <div class="compose__foot">
+            <span class="counter" id="afterCount">0 / 2000</span>
+            <span class="compose__err" id="resolveErr"></span>
+            <button class="btn btn--ghost" id="btnCancelResolve" type="button">先不写</button>
+            <button class="btn btn--primary" id="btnSubmitResolve" type="submit">写完这段</button>
+          </div>
+        </form>
+      </section>
+
+      <div class="detail__foot">
+        <span class="thanks" id="thanks">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 20.4s-7.6-4.6-7.6-9.6a4.2 4.2 0 0 1 7.6-2.6 4.2 4.2 0 0 1 7.6 2.6c0 5-7.6 9.6-7.6 9.6z"/>
+          </svg>
+          <span id="thanksCount">0</span> 人觉得被帮到
+        </span>
+        <a class="detail__more" href="index.html">看别的一段路 →</a>
+      </div>
+    </article>
+
+    <!-- hidden：内容处理中，只给一句占位，不展示正文 -->
+    <section id="hiddenView" hidden class="statebox">
+      <h1 class="detail__title" id="hiddenTitle"></h1>
+      <p class="hint hint--warn" id="hiddenNotice"></p>
+      <a class="btn btn--ghost" href="index.html">回到所有故事</a>
+    </section>
+
+    <!-- 404：不存在 / 私密 / 已删除，三者同一套文案，不区分原因 -->
+    <section id="missing" hidden class="statebox">
+      <h1 class="statebox__title">这条内容不在了</h1>
+      <p class="hint">可能作者删掉了，也可能这个链接本来就不对。</p>
+      <a class="btn btn--primary" href="index.html">回到所有故事</a>
+    </section>
+
+    <!-- 其它错误 -->
+    <section id="failed" hidden class="statebox">
+      <h1 class="statebox__title">没能打开这一段</h1>
+      <p class="hint" id="failMsg"></p>
+      <button class="btn btn--ghost" id="btnRetry" type="button">重新加载</button>
+    </section>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="assets/cloud-config.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/boot.js"></script>
+<script>
+const { api, ApiError } = window.Renlu;
+
+const TOPIC = {
+  study: '升学备考', job: '找工作', growth: '自我成长',
+  relation: '关系', daily: '过日子',
+  family: '家庭', money: '钱与生活', body: '身心状态',
+};
+const STAGE = {
+  before_18: '18 岁以前', college: '大学阶段', graduation: '毕业前后',
+  early_work: '初入职场', transition: '职业转型',
+};
+
+const $ = (id) => document.getElementById(id);
+const storyId = new URLSearchParams(location.search).get('id');
+
+/* 五个状态各有一块 DOM，显示哪个由 show() 决定，不在 render 里嵌套判断 */
+const VIEWS = ['loading', 'article', 'hiddenView', 'missing', 'failed'];
+
+function show(which) {
+  VIEWS.forEach((v) => { $(v).hidden = v !== which; });
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日`;
+}
+
+function statusTag(status) {
+  const open = status === 'open';
+  return `<span class="tag ${open ? 'tag--open' : 'tag--done'}">${open ? '还没走完' : '走过这一段'}</span>`;
+}
+
+/* ---------- 渲染 ---------- */
+
+function render(d) {
+  if (d.status === 'hidden') {
+    $('hiddenTitle').textContent = d.title || '';
+    $('hiddenNotice').textContent = d.notice || '这条内容正在处理中，暂时无法查看。';
+    show('hiddenView');
+    return;
+  }
+
+  $('crumb').textContent = `${TOPIC[d.topic_code] || '某一段路'} · 路上的故事`;
+  $('title').textContent = d.title || '';
+  $('author').textContent = d.author_nickname || '路过的人';
+  $('created').textContent = fmtDate(d.created_at);
+  $('stage').textContent = STAGE[d.life_stage] || '';
+
+  // 标签：状态 + 主题 + 作者自选标签
+  const tags = $('tags');
+  tags.replaceChildren();
+  const mk = (text, cls) => {
+    const s = document.createElement('span');
+    s.className = `tag ${cls}`;
+    s.textContent = text;
+    return s;
+  };
+  tags.append(mk(d.status === 'open' ? '还没走完' : '走过这一段', d.status === 'open' ? 'tag--open' : 'tag--done'));
+  if (TOPIC[d.topic_code]) tags.append(mk(TOPIC[d.topic_code], 'tag--plain'));
+  if (d.visibility === 'private') tags.append(mk('仅自己可见', 'tag--plain'));
+  if (d.is_sample) tags.append(mk('示例', 'tag--plain'));
+  (d.tags || []).forEach((t) => tags.append(mk(t, 'tag--plain')));
+
+  // 正文：纯文本写入，不解析任何标记
+  $('bodyBefore').replaceChildren(...toParagraphs(d.body_before));
+  const resolved = d.status === 'resolved' && d.body_after;
+  $('blockAfter').hidden = !resolved;
+  if (resolved) $('bodyAfter').replaceChildren(...toParagraphs(d.body_after));
+
+  const hint = $('openHint');
+  hint.hidden = d.status !== 'open';
+  // 同一句话对读者和作者不能一样：作者看到的「作者」就是自己
+  hint.textContent = d.is_author
+    ? '这是你写的。等后来发生了什么，随时可以回来补上——不着急。'
+    : '作者还没写后来。如果你正走在这段路上，可以先看看别人怎么走的。';
+  $('thanksCount').textContent = String(d.thanks_count || 0);
+
+  // 补写入口只给作者，且只在「还没走完」时给
+  $('compose').hidden = !(d.is_author && d.status === 'open');
+
+  show('article');
+  document.title = `${d.title} · 人生的路你走到哪了`;
+}
+
+function toParagraphs(text) {
+  return String(text || '')
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => {
+      const p = document.createElement('p');
+      p.className = 'prose__p';
+      p.textContent = s;
+      return p;
+    });
+}
+
+/* ---------- 补写 ---------- */
+
+function bindResolve(id) {
+  const form = $('resolveForm');
+  const input = $('afterInput');
+  const err = $('resolveErr');
+
+  input.addEventListener('input', () => {
+    $('afterCount').textContent = `${input.value.trim().length} / 2000`;
+    err.textContent = '';
+  });
+
+  $('btnOpenResolve').addEventListener('click', () => {
+    form.hidden = false;
+    $('btnOpenResolve').hidden = true;
+    input.focus();
+  });
+
+  $('btnCancelResolve').addEventListener('click', () => {
+    form.hidden = true;
+    $('btnOpenResolve').hidden = false;
+    err.textContent = '';
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (text.length < 50) {
+      err.textContent = `再写一点，至少 50 个字（现在 ${text.length} 个）`;
+      return;
+    }
+    const btn = $('btnSubmitResolve');
+    btn.disabled = true;
+    btn.textContent = '保存中…';
+    try {
+      await api.resolve(id, text);
+      await load();               // 成功后重新拉一次，状态由服务端决定，不在前端猜
+    } catch (ex) {
+      err.textContent = ex.message || '没能保存，稍后再试';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '写完这段';
+    }
+  });
+}
+
+/* ---------- 加载 ---------- */
+
+async function load() {
+  if (!storyId || !/^\d+$/.test(storyId)) {
+    show('missing');
+    return;
+  }
+  show('loading');
+  try {
+    const d = await api.detail(storyId);
+    render(d);
+  } catch (e) {
+    if (e instanceof ApiError) {
+      if (e.isGateClosed || e.isAuthLost) { location.href = 'gate.html'; return; }
+      if (e.isNotFound) { show('missing'); return; }
+    }
+    $('failMsg').textContent = (e && e.message) || '稍后再试';
+    show('failed');
+  }
+}
+
+$('btnRetry').addEventListener('click', load);
+load();
+bindResolve(storyId);
+</script>
+</body>
+</html>
