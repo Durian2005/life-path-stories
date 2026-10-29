@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>进入 · 人生的路你走到哪了</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="gate-body">
+
+<main class="gate">
+  <p class="gate__brand">人生的路你走到哪了</p>
+  <h1 class="gate__title">这里是一段段真实的经历</h1>
+  <p class="gate__desc">内容还在小范围试读。<br>输入访问口令就能进去。</p>
+
+  <form class="gate__form" id="form" novalidate>
+    <input class="gate__input" id="pass" type="password"
+           placeholder="访问口令" autocomplete="current-password" required>
+    <button class="btn btn--primary btn--block" id="submit" type="submit">进 入</button>
+  </form>
+
+  <p class="gate__err" id="err" hidden></p>
+  <p class="gate__foot">口令只用来挡住路人和搜索引擎，不区分你是谁。</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="assets/cloud-config.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/boot.js"></script>
+<script>
+(function () {
+  const form = document.getElementById('form');
+  const input = document.getElementById('pass');
+  const submit = document.getElementById('submit');
+  const err = document.getElementById('err');
+
+  function fail(msg) {
+    err.hidden = false;
+    err.textContent = msg;
+    submit.disabled = false;
+    submit.textContent = '进 入';
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const pass = input.value.trim();
+    if (!pass) { fail('先输入口令'); return; }
+
+    err.hidden = true;
+    submit.disabled = true;
+    submit.textContent = '正在进入…';
+
+    try {
+      await window.Renlu.api.gateVerify(pass);   // 口令校验，拿到 gate_ok
+      await window.Renlu.api.sessionInit();      // 换正式 token，首次会建号
+      location.replace('index.html');
+    } catch (ex) {
+      if (ex && ex.code === 42903) {
+        fail('试得有点多，过一会儿再来');
+        submit.disabled = true;
+        setTimeout(function () { submit.disabled = false; }, 20000);
+        return;
+      }
+      fail((ex && ex.message) || '进不去，稍后再试');
+    }
+  });
+
+  input.focus();
+})();
+</script>
+</body>
+</html>
