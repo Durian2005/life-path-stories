@@ -35,6 +35,11 @@
       <p class="write__sub" id="whoami">正在读取…</p>
     </header>
 
+    <!-- 只在「发布成功但详情页没跳过去」时出现，避免用户以为没发出去又发一遍（E7-3） -->
+    <div class="banner banner--ok" id="doneBanner" hidden>
+      发布成功。刚写的那一条在下面的列表里。
+    </div>
+
     <!-- 身份：恢复码是换设备的唯一凭证 -->
     <section class="idcard">
       <div class="idcard__head">
@@ -122,6 +127,10 @@ const { api, ApiError } = window.Renlu;
 const $ = (id) => document.getElementById(id);
 
 let revealed = false;
+
+if (new URLSearchParams(location.search).get('published') === '1') {
+  $('doneBanner').hidden = false;
+}
 
 /* ---------- 工具 ---------- */
 

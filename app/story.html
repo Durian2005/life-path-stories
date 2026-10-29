@@ -161,7 +161,7 @@ function fmtDate(iso) {
 
 function statusTag(status) {
   const open = status === 'open';
-  return `<span class="tag ${open ? 'tag--open' : 'tag--done'}">${open ? '还没走完' : '走过这一段'}</span>`;
+  return `<span class="tag ${open ? 'tag--open' : 'tag--resolved'}">${open ? '还没走完' : '走过这一段'}</span>`;
 }
 
 /* ---------- 渲染 ---------- */
@@ -189,7 +189,7 @@ function render(d) {
     s.textContent = text;
     return s;
   };
-  tags.append(mk(d.status === 'open' ? '还没走完' : '走过这一段', d.status === 'open' ? 'tag--open' : 'tag--done'));
+  tags.append(mk(d.status === 'open' ? '还没走完' : '走过这一段', d.status === 'open' ? 'tag--open' : 'tag--resolved'));
   if (TOPIC[d.topic_code]) tags.append(mk(TOPIC[d.topic_code], 'tag--plain'));
   if (d.visibility === 'private') tags.append(mk('仅自己可见', 'tag--plain'));
   if (d.is_sample) tags.append(mk('示例', 'tag--plain'));

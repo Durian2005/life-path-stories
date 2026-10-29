@@ -125,6 +125,12 @@
 
       <p class="count" id="count">正在加载…</p>
       <div class="stories" id="list" aria-live="polite"></div>
+
+      <!-- 列表底部：加载更多 / 没有更多了 / 上限提示，三态同一块 DOM（F3） -->
+      <div class="listfoot" id="listFoot" hidden>
+        <button class="btn btn--ghost btn--sm" id="btnMore" type="button">加载更多</button>
+        <p class="listfoot__text" id="footText"></p>
+      </div>
     </section>
 
     <div class="actions">
@@ -167,13 +173,27 @@ const ICONS = {
 const CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
 
 
-const state = { topic: 'study', status: 'all', keyword: '', page: 1 };
+const PAGE_SIZE = 10;          // R3-1：每页固定 10 条，不跟着屏幕大小变
+
+const state = {
+  topic: 'study', status: 'all', keyword: '',
+  page: 0,                     // 已成功取到的页码，0 = 一页还没拿到
+  hasMore: false,
+  truncated: false,
+  loading: false,
+  seq: 0,                      // 请求序号：只有最后一次筛选的响应算数（E3-3）
+  seen: new Set(),             // 已渲染的 id，追加时据此去重（R3-2）
+};
+
 const $ = (id) => document.getElementById(id);
 const elPaths = $('paths');
 const elList = $('list');
 const elCount = $('count');
 const elBanner = $('banner');
 const elTitle = $('listTitle');
+const elFoot = $('listFoot');
+const elMore = $('btnMore');
+const elFootText = $('footText');
 
 /* ---------- 图标 ---------- */
 
@@ -209,7 +229,6 @@ function renderPaths(counts = {}) {
 
     btn.addEventListener('click', () => {
       state.topic = t.code;
-      state.page = 1;
       renderPaths(counts);
       syncTitle();
       load();
@@ -233,7 +252,20 @@ function statusTag(status) {
     : '<span class="tag tag--open">还没走完</span>';
 }
 
-function makeCard(s, placeholder) {
+/* R3-4：卡片时间一律取 created_at；当天写「今天」，昨天写「昨天」 */
+function fmtCardDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const dayStart = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((dayStart(new Date()) - dayStart(d)) / 86400000);
+  if (days === 0) return '今天';
+  if (days === 1) return '昨天';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function makeCard(s) {
   const a = document.createElement('a');
   a.className = 'story';
   a.href = `story.html?id=${encodeURIComponent(s.id)}`;
@@ -241,12 +273,7 @@ function makeCard(s, placeholder) {
   const head = document.createElement('div');
   head.className = 'story__head';
   head.innerHTML = statusTag(s.status);          // 静态标记
-  if (placeholder) {
-    const b = document.createElement('span');
-    b.className = 'badge';
-    b.textContent = '占位';
-    head.appendChild(b);
-  } else if (s.is_sample) {
+  if (s.is_sample) {
     const b = document.createElement('span');
     b.className = 'badge';
     b.textContent = '示例';
@@ -266,18 +293,43 @@ function makeCard(s, placeholder) {
 
   const meta = document.createElement('div');
   meta.className = 'story__meta';
+
+  // R3-5 / R3-6：「更新过」只认服务端的 updated，前端不拿两个时间自己比
+  const time = document.createElement('span');
+  time.className = 'story__time';
+  time.textContent = fmtCardDate(s.created_at) + (s.updated ? ' · 更新过' : '');
+
   const who = document.createElement('span');
   who.textContent = s.author_nickname || '';
   const cnt = document.createElement('span');
   cnt.textContent = `${s.thanks_count || 0} 人致谢`;
-  meta.append(who, cnt);
+  meta.append(time, who, cnt);
   a.appendChild(meta);
 
   return a;
 }
 
-function renderList(items, { placeholder = false } = {}) {
+/* 追加一页：只往后加，已有卡片不动（R3-7 的后半句） */
+function appendList(items) {
+  const frag = document.createDocumentFragment();
+  let added = 0;
+
+  items.forEach((s) => {
+    const key = String(s.id);
+    if (state.seen.has(key)) return;      // R3-2：重复 id 直接丢掉
+    state.seen.add(key);
+    frag.appendChild(makeCard(s));
+    added += 1;
+  });
+
+  elList.appendChild(frag);
+  return added;
+}
+
+/* 换筛选：整块换掉，去重表一起清空 */
+function renderList(items) {
   elList.replaceChildren();
+  state.seen = new Set();
 
   if (!items.length) {
     elList.innerHTML = `
@@ -285,13 +337,95 @@ function renderList(items, { placeholder = false } = {}) {
         <span class="empty__title">这一段还没有人写</span>
         你可以是第一个。哪怕只写清楚「当时卡在哪」，对后来的人就是有用的。
       </div>`;
+    return 0;
+  }
+
+  return appendList(items);
+}
+
+/* ---------- 列表底部 ---------- */
+
+function addSkeletons(n = 3) {
+  for (let i = 0; i < n; i += 1) {
+    const d = document.createElement('div');
+    d.className = 'skeleton skeleton--more';
+    d.setAttribute('aria-hidden', 'true');
+    elList.appendChild(d);
+  }
+}
+
+function removeSkeletons() {
+  elList.querySelectorAll('.skeleton--more').forEach((n) => n.remove());
+}
+
+/**
+ * 底部只有这几种样子，全在这一处决定：
+ *   borrow  还没有任何结果，整块不出现（空态自己会说话）
+ *   loading 正在取下一页，按钮置灰
+ *   more    还有下一页，给「加载更多」按钮
+ *   end     全部加载完了（R3-3）
+ *   cap     到了 100 条上限，不再发起请求（R2-9 / E3-4）
+ *   error   这一页没取到，已加载的留着，按钮改成重试（E3-2）
+ */
+function renderFoot(mode) {
+  elMore.hidden = true;
+  elMore.disabled = false;
+  elMore.textContent = '加载更多';
+  elFootText.textContent = '';
+
+  if (mode === 'borrow') { elFoot.hidden = true; return; }
+  elFoot.hidden = false;
+
+  if (mode === 'loading') {
+    elMore.hidden = false;
+    elMore.disabled = true;
+    elMore.textContent = '正在加载…';
+    return;
+  }
+  if (mode === 'more') { elMore.hidden = false; return; }
+  if (mode === 'end') { elFootText.textContent = '没有更多了'; return; }
+  if (mode === 'cap') { elFootText.textContent = '只展示前 100 条，试试更具体的关键词'; return; }
+  if (mode === 'error') {
+    elMore.hidden = false;
+    elMore.textContent = '加载失败，点击重试';
+  }
+}
+
+/* ---------- 触底自动加载 ---------- */
+
+let footVisible = false;
+let lastAutoAt = 0;
+let pendingAuto = 0;
+
+/* 距底部 200px 以内就算触底（F3 触发条件），比监听 scroll 省事也更准 */
+const io = new IntersectionObserver((entries) => {
+  footVisible = entries[0].isIntersecting;
+  if (footVisible) autoMore();
+}, { rootMargin: '0px 0px 200px 0px' });
+
+io.observe(elFoot);
+
+function autoMore() {
+  if (!footVisible || state.loading || !state.hasMore) return;
+
+  // R3-8：1.5 秒内不重复触发。被挡下的这次不丢掉，等窗口过去补一次，
+  // 否则「这一页没让列表长高、哨兵一直可见」时，用户会卡在底部没有任何反馈。
+  const wait = 1500 - (Date.now() - lastAutoAt);
+  if (wait > 0) {
+    clearTimeout(pendingAuto);
+    pendingAuto = setTimeout(autoMore, wait + 20);
     return;
   }
 
-  const frag = document.createDocumentFragment();
-  items.forEach((s) => frag.appendChild(makeCard(s, placeholder)));
-  elList.appendChild(frag);
+  lastAutoAt = Date.now();
+  load(true);
 }
+
+elMore.addEventListener('click', () => {
+  if (state.loading || !state.hasMore) return;
+  lastAutoAt = Date.now();
+  load(true);
+});
 
 function showBanner(html, warn = false) {
   elBanner.hidden = false;
@@ -301,29 +435,77 @@ function showBanner(html, warn = false) {
 
 /* ---------- 加载 ---------- */
 
-async function load() {
-  if (!elList.children.length) {
-    elList.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
-  }
-
+/* 主题卡上的条数只在进页面时取一次：它不随翻页变化，没必要跟着每次筛选重发 */
+async function loadTopics() {
   try {
     const t = await api.topics();
     const counts = {};
     (t.items || []).forEach((x) => { counts[x.topic_code] = x.count; });
     renderPaths(counts);
+  } catch (e) {
+    if (e instanceof ApiError && e.isGateClosed) { location.replace('gate.html'); return; }
+    // 条数取不到不影响读列表，主题卡保持无数字
+  }
+}
 
+async function load(append = false) {
+  // 追加要防重入；换筛选不受这条约束——它有权打断正在飞的那次追加（E3-3）
+  if (append && (state.loading || !state.hasMore)) return;
+
+  const seq = (state.seq += 1);
+  state.loading = true;
+  let ok = false;
+
+  if (append) {
+    addSkeletons();                        // R3-7：底部 3 个骨架，已有卡片不动
+    renderFoot('loading');
+  } else {
+    state.page = 0;
+    state.hasMore = false;
+    elCount.textContent = '正在加载…';
+    elList.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+    renderFoot('borrow');
+  }
+
+  const wantPage = append ? state.page + 1 : 1;
+
+  try {
     const r = await api.list({
       topic: state.topic,
       status: state.status === 'all' ? null : state.status,
       keyword: state.keyword || null,
-      page: state.page,
-      size: 10,
+      page: wantPage,
+      size: PAGE_SIZE,
     });
-    elCount.textContent = `共 ${r.total} 条`;
-    renderList(r.items || []);
+    if (seq !== state.seq) return;         // 已有更新的筛选，这次结果整份作废
+    removeSkeletons();
+
+    const items = r.items || [];
+    state.page = r.page || wantPage;
+    state.hasMore = Boolean(r.has_more);
+    state.truncated = Boolean(r.truncated);
+
+    // 只有第一页的 total 可信：翻过一页之后再报数会把人吓一跳（RI-11）
+    if (state.page === 1) elCount.textContent = `共 ${r.total} 条`;
+
+    const added = append ? appendList(items) : renderList(items);
+    ok = true;
+
+    if (!items.length && !added) renderFoot('borrow');
+    else if (state.hasMore) renderFoot('more');
+    else renderFoot(state.truncated ? 'cap' : 'end');
   } catch (e) {
-    handleError(e);
+    if (seq !== state.seq) return;
+    removeSkeletons();
+    if (!append) { handleError(e); return; }
+    renderFoot('error');                   // E3-2：已加载的照旧留着
+  } finally {
+    if (seq === state.seq) state.loading = false;
   }
+
+  // 走到这里说明是最后一次请求且没出错。列表不满一屏就直接续上，
+  // 别让用户对着半屏内容还得先滚一下才有下一页。
+  if (ok && state.hasMore) autoMore();
 }
 
 function handleError(e) {
@@ -348,7 +530,6 @@ document.querySelectorAll('.tabs__item').forEach((btn) => {
     document.querySelectorAll('.tabs__item').forEach((b) => b.setAttribute('aria-selected', 'false'));
     btn.setAttribute('aria-selected', 'true');
     state.status = btn.dataset.status;
-    state.page = 1;
     load();
   });
 });
@@ -356,7 +537,6 @@ document.querySelectorAll('.tabs__item').forEach((btn) => {
 $('showAll').addEventListener('click', (ev) => {
   ev.preventDefault();
   state.topic = null;
-  state.page = 1;
   renderPaths({});
   syncTitle();
   load();
@@ -369,13 +549,13 @@ $('keyword').addEventListener('input', (ev) => {
   timer = setTimeout(() => {
     if (v === state.keyword) return;
     state.keyword = v;
-    state.page = 1;
     load();
   }, 320);
 });
 
 syncTitle();
 renderPaths({});
+loadTopics();
 load();
 
 if (!cloudReady()) console.info('[首页] 云端客户端未注入，当前为版式占位状态');

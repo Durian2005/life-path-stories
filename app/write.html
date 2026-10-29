@@ -51,6 +51,12 @@
       </p>
     </section>
 
+    <!-- 上次没写完的：自动填回来，但要让人知道填的是旧内容，也能一把丢掉 -->
+    <div class="banner" id="draftBanner" hidden>
+      <span>有一份没写完的草稿，已经帮你填回来了。</span>
+      <button class="banner__act" id="btnDropDraft" type="button">丢弃这份草稿</button>
+    </div>
+
     <form id="form" class="form" novalidate>
 
       <!-- 1 走在哪一段 -->
@@ -142,8 +148,8 @@
       <p class="form__err" id="formErr"></p>
 
       <div class="form__foot">
-        <p class="form__note">发布后可以再回来补写「后来」，也可以随时删除。</p>
-        <button class="btn btn--primary" type="submit" id="btnSubmit">发布这一段</button>
+        <p class="form__note" id="formNote">下一步先让你看一眼发布后的样子，确认了才真正发出去。</p>
+        <button class="btn btn--primary" type="submit" id="btnSubmit">预览</button>
       </div>
     </form>
 
@@ -158,9 +164,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
 <script src="assets/cloud-config.js"></script>
 <script src="assets/api.js"></script>
+<script src="assets/draft.js"></script>
 <script src="assets/boot.js"></script>
 <script>
 const { api, ApiError } = window.Renlu;
+const RenluDraft = window.RenluDraft;
 
 const TOPICS = [
   { code: 'study',    name: '升学备考' },
@@ -195,6 +203,7 @@ TOPICS.forEach((t) => {
   b.addEventListener('click', () => {
     state.topic = t.code;
     [...elTopics.children].forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.code === t.code)));
+    markDirty();
   });
   elTopics.append(b);
 });
@@ -213,11 +222,13 @@ TAGS.forEach(([code, name]) => {
     if (state.tags.has(code)) {
       state.tags.delete(code);
       b.setAttribute('aria-pressed', 'false');
+      markDirty();
       return;
     }
     if (state.tags.size >= 3) return;      // 上限 3 个，静默忽略比报错更省事
     state.tags.add(code);
     b.setAttribute('aria-pressed', 'true');
+    markDirty();
   });
   elTags.append(b);
 });
@@ -235,6 +246,7 @@ function bindGroup(selector, key, attr) {
         $('afterField').hidden = !need;
         if (need) $('after').focus();
       }
+      markDirty();
     });
   });
 }
@@ -276,57 +288,139 @@ function fail(msg) {
   $('formErr').scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
+/** 表单 → 一份数据。草稿、预览、提交三处用的都是这一份，字段名只在这里定义 */
+function snapshot() {
+  return {
+    topic: state.topic,
+    status: state.status,
+    vis: state.vis,
+    tags: [...state.tags],
+    title: $('title').value.trim(),
+    before: $('before').value.trim(),
+    after: $('after').value.trim(),
+    stage: $('stage').value,
+    nickname: $('nickname').value.trim(),
+  };
+}
+
+function validate(d) {
+  // 编辑模式不显示确认区（内容早就发过了），这里不能再拦
+  if (!editId && !agreed()) return '先把上面的两项确认勾上';
+  if (d.title.length < 4) return '标题至少 4 个字';
+  if (d.before.length < 50) return `「当时」至少 50 个字（现在 ${d.before.length} 个）`;
+  if (d.status === 'resolved' && d.after.length < 50) {
+    return `「后来」至少 50 个字（现在 ${d.after.length} 个）`;
+  }
+  return '';
+}
+
 $('form').addEventListener('submit', async (e) => {
   e.preventDefault();
   $('formErr').textContent = '';
 
-  // 编辑模式不显示确认区（内容早就发过了），这里不能再拦
-  if (!editId && !agreed()) { fail('先把上面的两项确认勾上'); return; }
+  const d = snapshot();
+  const bad = validate(d);
+  if (bad) { fail(bad); return; }
 
-  const title = $('title').value.trim();
-  const before = $('before').value.trim();
-  const after = $('after').value.trim();
+  // 编辑：内容早就在服务端了，改完直接存
+  if (editId) { await saveEdit(d); return; }
 
-  if (title.length < 4) { fail('标题至少 4 个字'); return; }
-  if (before.length < 50) { fail(`「当时」至少 50 个字（现在 ${before.length} 个）`); return; }
-  if (state.status === 'resolved' && after.length < 50) {
-    fail(`「后来」至少 50 个字（现在 ${after.length} 个）`);
-    return;
-  }
+  // 投稿：不在这里发。R6-13 要求预览与发布之间必须经过 F7，
+  // 所以这个按钮的下一步是预览页，真正的 api.create 在那边。
+  RenluDraft.save(d);
+  RenluDraft.reopenPreview();
+  location.href = 'preview.html';
+});
 
-  const payload = {
-    title,
-    body_before: before,
-    body_after: state.status === 'resolved' ? after : null,
-    status: state.status,
-    topic_code: state.topic,
-    life_stage: $('stage').value,
-    tags: [...state.tags],
-    nickname: $('nickname').value.trim(),
-    visibility: state.vis,
-  };
-
+async function saveEdit(d) {
   const btn = $('btnSubmit');
   btn.disabled = true;
-  btn.textContent = editId ? '保存中…' : '发布中…';
+  btn.textContent = '保存中…';
   try {
-    if (editId) {
-      await api.update(editId, payload);
-      location.replace(`story.html?id=${encodeURIComponent(editId)}`);
-      return;
-    }
-    const d = await api.create(payload);
-    location.replace(`story.html?id=${encodeURIComponent(d.id)}`);
+    await api.update(editId, {
+      title: d.title,
+      body_before: d.before,
+      body_after: d.status === 'resolved' ? d.after : null,
+      status: d.status,
+      topic_code: d.topic,
+      life_stage: d.stage,
+      tags: d.tags,
+      nickname: d.nickname,
+      visibility: d.vis,
+    });
+    location.replace(`story.html?id=${encodeURIComponent(editId)}`);
   } catch (ex) {
     if (ex instanceof ApiError) {
       if (ex.isGateClosed || ex.isAuthLost) { location.href = 'gate.html'; return; }
-      if (ex.isRateLimited) { fail('发得有点快，歇十几分钟再发'); return; }
-      if (ex.code === 40901) { fail('这条内容的状态变了，刷新页面看看'); return; }
+      if (ex.code === 40901) fail('这条内容的状态变了，刷新页面看看');
+      else fail(ex.message || '没能保存，稍后再试');
+    } else {
+      fail('没能保存，稍后再试');
     }
-    fail((ex && ex.message) || (editId ? '没能保存，稍后再试' : '没能发布，稍后再试'));
     btn.disabled = false;
-    btn.textContent = editId ? '保存修改' : '发布这一段';
+    btn.textContent = '保存修改';
   }
+}
+
+/* ---------- 草稿（R6-9 / AC-36） ---------- */
+
+const DRAFT_DEBOUNCE = 5000;   // 输入停止 5 秒后落盘，另外失焦和离开页面也立刻落盘
+let draftTimer = 0;
+let draftDirty = false;
+
+function flushDraft() {
+  if (editId || !draftDirty) return;
+  clearTimeout(draftTimer);
+  draftDirty = false;
+  // 标题都没写，就没有值得留下的东西
+  if (!$('title').value.trim()) return;
+  RenluDraft.save(snapshot());
+}
+
+function markDirty() {
+  if (editId) return;
+  draftDirty = true;
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(flushDraft, DRAFT_DEBOUNCE);
+}
+
+// 点击类控件（主题、标签、状态、可见范围）不触发 input，得自己喊一声
+$('form').addEventListener('input', markDirty);
+$('form').addEventListener('change', markDirty);
+window.addEventListener('pagehide', flushDraft);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushDraft(); });
+
+function restoreDraft() {
+  if (editId) return;
+  const d = RenluDraft.load();
+  if (!d) return;
+
+  state.topic = d.topic || state.topic;
+  state.status = d.status === 'resolved' ? 'resolved' : 'open';
+  state.vis = d.vis === 'private' ? 'private' : 'public';
+  state.tags = new Set(d.tags);
+
+  $('title').value = d.title || '';
+  $('before').value = d.before || '';
+  $('after').value = d.after || '';    // R6-4：二段先留着，切回「走过来了」就还在
+  $('stage').value = d.stage || 'college';
+  $('nickname').value = d.nickname || '';
+
+  setPressed('#topics .chip', 'code', state.topic);
+  setPressed('.choice__item[data-status]', 'status', state.status);
+  setPressed('.choice__item[data-vis]', 'vis', state.vis);
+  [...$('tags').children].forEach((b) => {
+    b.setAttribute('aria-pressed', String(state.tags.has(b.dataset.code)));
+  });
+  $('afterField').hidden = state.status !== 'resolved';
+  refreshCounts();
+
+  $('draftBanner').hidden = false;
+}
+
+$('btnDropDraft').addEventListener('click', () => {
+  RenluDraft.clear();
+  location.reload();                 // 清完重进，就是一张干净的表单
 });
 
 /* ---------- 编辑模式：预填 ---------- */
@@ -388,9 +482,11 @@ async function initEdit() {
 
   refreshCounts();
   $('nickname').placeholder = '留空则沿用现在的昵称';
+  $('formNote').textContent = '发布后可以再回来补写「后来」，也可以随时删除。';
 }
 
-initEdit();
+/* 编辑模式读的是服务端内容，新投稿读的是本地草稿，两者不会同时发生 */
+initEdit().finally(restoreDraft);
 </script>
 </body>
 </html>

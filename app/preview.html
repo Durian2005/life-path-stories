@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>预览 · 人生的路你走到哪了</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<nav class="nav nav--narrow">
+  <div class="wrap nav__inner">
+    <a class="nav__brand" href="index.html">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5.5 18.5c0-4 3.6-4.2 6.3-6.6 2.7-2.4 6.2-2.6 6.7-6.4"/>
+        <circle cx="5.5" cy="18.5" r="1.7" fill="currentColor" stroke="none"/>
+        <circle cx="18.5" cy="5.5" r="1.7" fill="currentColor" stroke="none"/>
+      </svg>
+      <span>人生的路你走到哪了</span>
+      <span style="color:var(--ink-3)">.</span>
+    </a>
+    <div class="nav__right">
+      <a class="nav__tagline nav__back" href="write.html">← 返回修改</a>
+    </div>
+  </div>
+</nav>
+
+<!-- R7-2：粘在导航下面，滚到正文深处也别忘「这还没发出去」 -->
+<div class="previewbar" id="previewBar" hidden>预览效果。发布后才会出现在公开列表。</div>
+
+<main class="detail-main">
+  <div class="wrap wrap--read">
+
+    <article id="article" hidden>
+      <p class="crumb" id="crumb"></p>
+
+      <div class="detail__tags" id="tags"></div>
+      <h1 class="detail__title" id="title"></h1>
+
+      <div class="detail__meta">
+        <span id="author"></span>
+        <span class="dot">·</span>
+        <time id="created"></time>
+        <span class="dot">·</span>
+        <span id="stage"></span>
+      </div>
+
+      <div class="prose">
+        <section class="block">
+          <h2 class="block__title">当时</h2>
+          <div class="block__body" id="bodyBefore"></div>
+        </section>
+
+        <section class="block" id="blockAfter" hidden>
+          <h2 class="block__title">后来</h2>
+          <div class="block__body" id="bodyAfter"></div>
+        </section>
+      </div>
+
+      <p class="hint" id="openHint" hidden>
+        作者还没写后来。如果你正走在这段路上，可以先看看别人怎么走的。
+      </p>
+
+      <!-- R7-3：三问只是提示，没有勾选框，也不阻断发布 -->
+      <section class="selfcheck">
+        <p class="selfcheck__title">发之前，问自己三句</p>
+        <ol class="selfcheck__list">
+          <li>这段经历是我自己的吗</li>
+          <li>有没有写到别人的隐私</li>
+          <li>愿不愿意让同校的人看到</li>
+        </ol>
+        <p class="selfcheck__note">不用回答，也不影响发布。只是按下按钮前，值得想一秒。</p>
+      </section>
+
+      <div class="previewfoot">
+        <button class="btn btn--ghost" id="btnBack" type="button">返回修改</button>
+        <button class="btn btn--primary" id="btnPublish" type="button">确认发布</button>
+      </div>
+
+      <p class="previewfoot__err" id="pubErr"></p>
+    </article>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="assets/cloud-config.js"></script>
+<script src="assets/api.js"></script>
+<script src="assets/draft.js"></script>
+<script src="assets/boot.js"></script>
+<script>
+const { api, ApiError, getNickname } = window.Renlu;
+const RenluDraft = window.RenluDraft;
+
+const TOPIC = {
+  study: '升学备考', job: '找工作', growth: '自我成长',
+  relation: '关系', daily: '过日子',
+  family: '家庭', money: '钱与生活', body: '身心状态',
+};
+const STAGE = {
+  before_18: '18 岁以前', college: '大学阶段', graduation: '毕业前后',
+  early_work: '初入职场', transition: '职业转型',
+};
+
+/* 标签存的是 code，预览要给人看名字。映射漏了就干脆不显示，别把 code 摊给用户 */
+const TAG_NAME = {
+  exam: '备考', jobhunt: '求职', intern: '实习', major: '专业',
+  social: '社交', mood: '情绪', family: '家庭', time: '时间',
+};
+
+const $ = (id) => document.getElementById(id);
+
+/* 草稿只读这一次：之后发布用的是内存里这一份，
+   所以预览期间别的标签页把 localStorage 清了也不影响发布（E7-5） */
+const draft = RenluDraft.takeForPreview();
+
+if (!draft) {
+  // AC-43：直接输地址进来、或者刷新过一次，都不该看到预览态。
+  // 草稿还在（R7-7），回投稿页就自动填回去了。
+  location.replace('write.html');
+} else {
+  render(draft);
+  $('previewBar').hidden = false;
+  $('article').hidden = false;
+  $('btnBack').addEventListener('click', () => { location.href = 'write.html'; });
+  $('btnPublish').addEventListener('click', publish);
+}
+
+/* ---------- 渲染：与详情页同一批组件，不另做一套 ---------- */
+
+function fmtToday() {
+  const d = new Date();
+  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日`;
+}
+
+function toParagraphs(text) {
+  return String(text || '')
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => {
+      const p = document.createElement('p');
+      p.className = 'prose__p';
+      p.textContent = s;
+      return p;
+    });
+}
+
+function render(d) {
+  const open = d.status !== 'resolved';
+
+  $('crumb').textContent = `${TOPIC[d.topic] || '某一段路'} · 路上的故事`;
+  $('title').textContent = d.title || '';
+  $('author').textContent = d.nickname || getNickname() || '路过的人';
+  $('created').textContent = fmtToday();     // 以发布当天为准，免得看到个未来日期
+  $('stage').textContent = STAGE[d.stage] || '';
+
+  const tags = $('tags');
+  tags.replaceChildren();
+  const mk = (text, cls) => {
+    const s = document.createElement('span');
+    s.className = `tag ${cls}`;
+    s.textContent = text;
+    return s;
+  };
+  tags.append(mk(open ? '还没走完' : '走过这一段', open ? 'tag--open' : 'tag--resolved'));
+  if (TOPIC[d.topic]) tags.append(mk(TOPIC[d.topic], 'tag--plain'));
+  if (d.vis === 'private') tags.append(mk('仅自己可见', 'tag--plain'));
+  (d.tags || []).forEach((t) => {
+    const name = TAG_NAME[t];
+    if (name) tags.append(mk(name, 'tag--plain'));
+  });
+
+  $('bodyBefore').replaceChildren(...toParagraphs(d.before));
+
+  const hasAfter = !open && d.after;
+  $('blockAfter').hidden = !hasAfter;
+  if (hasAfter) $('bodyAfter').replaceChildren(...toParagraphs(d.after));
+
+  $('openHint').hidden = !open;
+}
+
+/* ---------- 发布 ---------- */
+
+let publishing = false;
+
+function payload(d) {
+  return {
+    title: d.title,
+    body_before: d.before,
+    body_after: d.status === 'resolved' ? d.after : null,
+    status: d.status,
+    topic_code: d.topic,
+    life_stage: d.stage,
+    tags: d.tags,
+    nickname: d.nickname,
+    visibility: d.vis,
+  };
+}
+
+async function publish() {
+  if (publishing) return;               // R7-8：连点只算一次
+  publishing = true;
+
+  const btn = $('btnPublish');
+  const err = $('pubErr');
+  btn.disabled = true;
+  btn.textContent = '发布中…';
+  err.textContent = '';
+
+  try {
+    const r = await api.create(payload(draft));
+    RenluDraft.clear();                 // AC-36：发出去了，草稿就该消失
+
+    location.replace(`story.html?id=${encodeURIComponent(r.id)}`);
+    // E7-3：详情页跳不过去时，「没发成功」比「重复发一条」更糟，
+    // 所以兜底去「我的经历」，那里能看到刚发的这条。
+    setTimeout(() => location.replace('me.html?published=1'), 2500);
+  } catch (ex) {
+    if (ex instanceof ApiError) {
+      if (ex.isGateClosed || ex.isAuthLost) { location.href = 'gate.html'; return; }
+      if (ex.isRateLimited) {
+        err.textContent = '发得有点快，歇十几分钟再发。内容还在。';
+      } else if (ex.code === 40901) {
+        err.textContent = '这次提交和上一次重复了，内容还在，可以直接重试。';
+      } else {
+        err.textContent = `发布没成功，内容还在。${ex.message ? `（${ex.message}）` : ''}`;
+      }
+    } else {
+      err.textContent = '发布没成功，内容还在。检查一下网络再重试。';
+    }
+    // E7-2：留在预览页，不跳回投稿页，按钮改成「重试」
+    publishing = false;
+    btn.disabled = false;
+    btn.textContent = '重试';
+  }
+}
+</script>
+</body>
+</html>
