@@ -2030,18 +2030,18 @@ a.section__head--jump { color: inherit; text-decoration: none; }
 /* ---------- 窄屏微调 ---------- */
 
 @media (max-width: 680px) {
-  /* 手机上插画只有 200px 高，74px 的月亮会盖住太多画面，
-     收到 58px 并往左挪：贴着右边缘时它悬在山坡外侧，看着像贴纸 */
+  /* 手机上插画只有 200px 高。原图的太阳在右上角（约 86%），
+     月亮放那儿会贴边；改放左侧那片空旷天空，和右侧的人物形成对角。 */
   [data-theme="dark"] .hero__moon {
-    left: 54%;
-    top: 8%;
+    left: 42%;
+    top: 10%;
     width: 58px;
     height: 58px;
   }
 
   /* 月光跟着月牙一起左移，否则光晕留在右边、和月亮分家 */
   [data-theme="dark"] .hero__moonlight {
-    background: radial-gradient(ellipse 46% 62% at 60% 30%,
+    background: radial-gradient(ellipse 46% 62% at 47% 32%,
       rgba(228, 240, 226, 0.17) 0%,
       rgba(198, 220, 208, 0.07) 36%,
       transparent 66%);

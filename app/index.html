@@ -6,9 +6,9 @@
 <!-- 受控预览：不让搜索引擎收录（PRD F0） -->
 <meta name="robots" content="noindex, nofollow">
 <title>人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261031f">
+<link rel="stylesheet" href="assets/style.css?v=20261031g">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261031f"></script>
+<script src="assets/theme.js?v=20261031g"></script>
 </head>
 <body>
 
@@ -191,9 +191,9 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="assets/cloud-config.js?v=20261031f"></script>
-<script src="assets/api.js?v=20261031f"></script>
-<script src="assets/boot.js?v=20261031f"></script>
+<script src="assets/cloud-config.js?v=20261031g"></script>
+<script src="assets/api.js?v=20261031g"></script>
+<script src="assets/boot.js?v=20261031g"></script>
 <script>
 const { api, ApiError, cloudReady } = window.Renlu;
 
@@ -597,20 +597,11 @@ document.querySelectorAll('.tabs__item').forEach((btn) => {
   });
 });
 
-/* 点「你正走在哪一段？」直接滑到内容：手机上主题卡占掉近一屏，
-   想读故事还得先手动滑一段，把这个动作省掉。
-   元素本身是 <a href="#stories">，脚本只负责把「瞬间跳」换成「平滑滚」；
-   脚本没执行时浏览器也会原生跳过去，不会出现点了没反应。 */
-const elJump = $('pathsHead');
-
-function jumpToStories(ev) {
-  const target = $('stories');
-  if (!target) return;
-  if (ev) ev.preventDefault();
-  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-elJump.addEventListener('click', jumpToStories);
+/* 点「你正走在哪一段？」滑到内容区。
+   这里**故意不写任何脚本**：元素本身就是 <a href="#stories">，浏览器原生跳转，
+   一定有反应。之前用 preventDefault + scrollIntoView({behavior:'smooth'})，
+   在微信内置浏览器里会两个都失效（拦掉了原生跳转，又不支持带参数的 scrollIntoView），
+   表现就是「点了没反应」。#stories 的 scroll-margin-top: 68px 保证落点避开固定顶栏。 */
 
 $('showAll').addEventListener('click', (ev) => {
   ev.preventDefault();
