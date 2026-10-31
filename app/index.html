@@ -117,8 +117,18 @@
     <div class="banner" id="banner" hidden></div>
 
     <section class="section">
-      <div class="section__head">
-        <h2 class="section__title">你正走在哪一段？</h2>
+      <!-- 标题可点：手机上主题卡占掉近一屏，点标题直接下滑到内容 -->
+      <div class="section__head section__head--jump" id="pathsHead" role="button" tabindex="0"
+           aria-label="跳到下面的内容列表">
+        <h2 class="section__title">
+          你正走在哪一段？
+          <span class="section__jump" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M6 13l6 6 6-6"/>
+            </svg>
+          </span>
+        </h2>
         <span class="section__meta">人生路径 · 01</span>
       </div>
       <p class="section__desc">选一个最贴近现在的，看看走过这条路的人。</p>
@@ -584,6 +594,20 @@ document.querySelectorAll('.tabs__item').forEach((btn) => {
     state.status = btn.dataset.status;
     load();
   });
+});
+
+/* 点「你正走在哪一段？」直接滑到内容：手机上主题卡占掉近一屏，
+   想读故事还得先手动滑一段，把这个动作省掉 */
+const elJump = $('pathsHead');
+
+function jumpToStories() {
+  const target = $('stories');
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+elJump.addEventListener('click', jumpToStories);
+elJump.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); jumpToStories(); }
 });
 
 $('showAll').addEventListener('click', (ev) => {

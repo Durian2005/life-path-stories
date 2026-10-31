@@ -1995,13 +1995,43 @@ button.thanks:disabled { background: transparent; }
   .path__desc { font-size: 11.5px; line-height: 1.6; }
 }
 
+/* ============================================================
+   首页：点区块标题直接跳到内容
+   锚点要留出固定顶栏的高度，否则跳过去标题会被顶栏盖住
+   ============================================================ */
+
+#stories { scroll-margin-top: 68px; }
+
+.section__head--jump { cursor: pointer; }
+.section__head--jump:hover .section__title { color: var(--brand); }
+.section__head--jump:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 6px;
+  border-radius: 6px;
+}
+
+/* 标题后面的小圆箭头：让人看得出这一行能点，不用写说明文字 */
+.section__jump {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--brand-weak);
+  color: var(--brand);
+  transition: transform 0.18s ease;
+}
+
+.section__head--jump:hover .section__jump { transform: translateY(2px); }
+
 /* ---------- 窄屏微调 ---------- */
 
 @media (max-width: 680px) {
   /* 手机上插画只有 200px 高，74px 的月亮会盖住太多画面，
-     收小到 58px 并右移一点，大致落在原图那颗太阳的位置上 */
+     收到 58px 并挪到偏左一些，落在原图那颗太阳的位置附近 */
   [data-theme="dark"] .hero__moon {
-    left: 66%;
+    left: 60%;
     top: 8%;
     width: 58px;
     height: 58px;
