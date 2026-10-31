@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>一段路 · 人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261031x">
+<link rel="stylesheet" href="assets/style.css?v=20261101a">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261031x"></script>
+<script src="assets/theme.js?v=20261101a"></script>
 </head>
 <body>
 
@@ -105,16 +105,45 @@
       </section>
 
       <div class="detail__foot">
-        <button class="thanks" id="btnThanks" type="button">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 20.4s-7.6-4.6-7.6-9.6a4.2 4.2 0 0 1 7.6-2.6 4.2 4.2 0 0 1 7.6 2.6c0 5-7.6 9.6-7.6 9.6z"/>
-          </svg>
-          <span id="thanksText">0 人觉得被帮到</span>
-        </button>
+        <div class="detail__acts">
+          <!-- V1.1 共鸣：同设备一次，语义是「我也走过这段」 -->
+          <button class="thanks" id="btnResonate" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8.2 3.5c-1.5 0-2.4 1.2-2.4 2.8 0 2.2.9 3.1.9 4.6h3c0-1.5.9-2.4.9-4.6 0-1.6-.9-2.8-2.4-2.8z"/>
+              <path d="M15.8 9.5c-1.5 0-2.4 1.2-2.4 2.8 0 2.2.9 3.1.9 4.6h3c0-1.5.9-2.4.9-4.6 0-1.6-.9-2.8-2.4-2.8z"/>
+              <path d="M5.9 14.2h4.6M13.5 20.2h4.6"/>
+            </svg>
+            <span id="resonateText">…</span>
+          </button>
+          <button class="thanks" id="btnThanks" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20.4s-7.6-4.6-7.6-9.6a4.2 4.2 0 0 1 7.6-2.6 4.2 4.2 0 0 1 7.6 2.6c0 5-7.6 9.6-7.6 9.6z"/>
+            </svg>
+            <span id="thanksText">0 人觉得被帮到</span>
+          </button>
+          <button class="thanks" id="btnPoster" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 15V4m0 11 4-4m-4 4-4-4"/>
+              <path d="M5 18.5h14"/>
+            </svg>
+            <span>生成海报</span>
+          </button>
+        </div>
         <a class="detail__more" href="index.html">看别的一段路 →</a>
       </div>
     </article>
+
+    <!-- V1.1 海报层：canvas 画完长按保存，不动后端 -->
+    <div id="posterLayer" hidden class="poster-layer">
+      <div class="poster-box">
+        <img id="posterImg" class="poster-img" alt="这段路的故事海报">
+        <p class="poster-tip">长按图片可以保存 / 转发给同路的人</p>
+        <button class="btn btn--ghost" id="btnPosterClose" type="button">关闭</button>
+      </div>
+    </div>
 
     <!-- hidden：内容处理中，只给一句占位，不展示正文 -->
     <section id="hiddenView" hidden class="statebox">
@@ -141,9 +170,9 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="assets/cloud-config.js?v=20261031x"></script>
-<script src="assets/api.js?v=20261031x"></script>
-<script src="assets/boot.js?v=20261031x"></script>
+<script src="assets/cloud-config.js?v=20261101a"></script>
+<script src="assets/api.js?v=20261101a"></script>
+<script src="assets/boot.js?v=20261101a"></script>
 <script>
 const { api, ApiError } = window.Renlu;
 
@@ -223,6 +252,8 @@ function render(d) {
     ? '这是你写的。等后来发生了什么，随时可以回来补上——不着急。'
     : '作者还没写后来。如果你正走在这段路上，可以先看看别人怎么走的。';
   syncThanks(d);   // 计数、已致谢状态、能不能点，都交给一个函数决定
+  currentDetail = d;          // V1.1 海报要用完整数据，先存下来
+  syncResonate(d);            // V1.1 共鸣：计数与「我是否点过」单独查一次
 
   // 补写入口只给作者，且只在「还没走完」时给
   $('compose').hidden = !(d.is_author && d.status === 'open');
@@ -284,6 +315,207 @@ $('btnThanks').addEventListener('click', async () => {
     $('thanksText').textContent = `没能致谢：${(e && e.message) || '稍后再试'}`;
     btn.disabled = false;
   }
+});
+
+/* ---------- V1.1 共鸣：我也走过这段 ---------- */
+
+let currentDetail = null;
+let resonateState = { id: null, count: 0, done: false, can: false };
+
+function renderResonate() {
+  const n = resonateState.count;
+  $('resonateText').textContent = resonateState.done
+    ? `你也走过这段 · 共 ${n} 人`
+    : (n ? `${n} 人也走过这段` : '还没有人走过这段');
+}
+
+function syncResonate(d) {
+  resonateState = {
+    id: d.id,
+    count: 0,
+    done: false,
+    can: !(d.is_author || d.is_sample || d.status === 'hidden'),
+  };
+  const btn = $('btnResonate');
+  btn.hidden = Boolean(d.is_sample);       // 示例内容不可打点，直接不显示
+  btn.disabled = true;                     // 计数回来之前先不许点
+  $('resonateText').textContent = '…';
+  btn.title = d.is_author ? '自己的路标不需要打点' : '';
+  api.resonateState([d.id]).then((r) => {
+    const x = (r.items || []).find((i) => String(i.story_id) === String(d.id));
+    if (!x) return;
+    resonateState.count = x.resonate_count || 0;
+    resonateState.done = Boolean(x.resonated);
+    renderResonate();
+    btn.disabled = !resonateState.can || resonateState.done;
+    btn.classList.toggle('thanks--done', resonateState.done);
+  }).catch(() => {
+    // 状态拿不到就不展示这个按钮，避免一个 0 在那骗人
+    btn.hidden = true;
+  });
+}
+
+$('btnResonate').addEventListener('click', async () => {
+  if (!resonateState.can || resonateState.done) return;
+  const btn = $('btnResonate');
+  btn.disabled = true;
+  try {
+    const r = await api.resonate(resonateState.id);
+    resonateState.count = r.resonate_count;
+    resonateState.done = true;
+    renderResonate();
+    btn.classList.add('thanks--done');
+  } catch (e) {
+    if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) { location.href = window.Renlu.gateUrl(); return; }
+    if (e instanceof ApiError && e.code === 41001) {   // 已经打过点等边界
+      resonateState.done = true;
+      renderResonate();
+      btn.classList.add('thanks--done');
+      return;
+    }
+    $('resonateText').textContent = '没能打上点，稍后再试';
+    btn.disabled = false;
+  }
+});
+
+/* ---------- V1.1 海报：canvas 画一张可长按保存的图 ---------- */
+
+const POSTER_QR = 'assets/qr-share.png?v=20261101a';
+const POSTER_FONT = '-apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
+
+/* 按像素宽折行；maxLines 折满后把最后一行截成「…」结尾。
+   带中文禁则：行首不允许出现句读点，折行时把它带回上一行行尾。 */
+const POSTER_NO_LINE_START = '，。、！？；：）】」』%·…';
+function wrapLines(g, text, maxW, maxLines) {
+  const lines = [];
+  let line = '';
+  for (const ch of String(text || '').replace(/\s+/g, ' ').trim()) {
+    if (g.measureText(line + ch).width > maxW && line) {
+      // 下一个字符会挪到新行——若它是句读点，违反禁则，塞回本行行尾
+      if (POSTER_NO_LINE_START.includes(ch)) {
+        lines.push(line + ch);
+        line = '';
+      } else {
+        lines.push(line);
+        line = ch;
+      }
+      if (lines.length === maxLines) {
+        const last = lines[maxLines - 1];
+        lines[maxLines - 1] = POSTER_NO_LINE_START.includes(last.slice(-1))
+          ? last : last.slice(0, -1) + '…';
+        return lines;
+      }
+    } else {
+      line += ch;
+    }
+  }
+  if (line && lines.length < maxLines) lines.push(line);
+  return lines;
+}
+
+function drawPoster(d) {
+  return new Promise((resolve, reject) => {
+    const W = 750, H = 1180;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d');
+
+    // 夜空底：从上到下三段渐变，和站内夜色一个气质
+    const bg = g.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0b1220');
+    bg.addColorStop(0.55, '#152840');
+    bg.addColorStop(1, '#0b1220');
+    g.fillStyle = bg;
+    g.fillRect(0, 0, W, H);
+
+    // 星星：固定种子的伪随机，同一张海报每次画出来都一样。
+    // 撒到全幅 85%，越往下越稀，避免中段一大片空
+    let seed = 20261101;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    g.fillStyle = '#dfe9f5';
+    for (let i = 0; i < 170; i++) {
+      const fy = rnd();
+      const x = rnd() * W, y = fy * H * 0.85, r = rnd() * 1.5 + 0.4;
+      g.globalAlpha = (rnd() * 0.6 + 0.25) * (1 - fy * 0.55);
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    }
+    g.globalAlpha = 1;
+
+    // 标题区右侧一团极淡的光，把视线引到第一行
+    const glow = g.createRadialGradient(W * 0.78, 150, 20, W * 0.78, 150, 300);
+    glow.addColorStop(0, 'rgba(143, 184, 216, 0.16)');
+    glow.addColorStop(1, 'rgba(143, 184, 216, 0)');
+    g.fillStyle = glow;
+    g.fillRect(0, 0, W, 480);
+
+    // 顶部站点名
+    g.fillStyle = '#8fb8d8';
+    g.font = `500 24px ${POSTER_FONT}`;
+    g.fillText('人生的路你走到哪了', 56, 88);
+
+    // 标题：最多两行
+    g.fillStyle = '#f2f6fa';
+    g.font = `600 46px ${POSTER_FONT}`;
+    let y = 190;
+    wrapLines(g, d.title || '', W - 112, 2).forEach((ln) => {
+      g.fillText(ln, 56, y);
+      y += 64;
+    });
+
+    // 引文：取「当时」的第一段，最多四行
+    g.fillStyle = '#b9c8d6';
+    g.font = `400 27px ${POSTER_FONT}`;
+    y += 26;
+    wrapLines(g, (d.body_before || '').split('\n')[0], W - 112, 4).forEach((ln) => {
+      g.fillText(ln, 56, y);
+      y += 46;
+    });
+
+    // 分隔线 + 作者与日期：锚在二维码上方，中段留给夜空呼吸
+    const divY = H - 352;
+    g.strokeStyle = 'rgba(143, 184, 216, 0.35)';
+    g.lineWidth = 1;
+    g.beginPath(); g.moveTo(56, divY); g.lineTo(W - 56, divY); g.stroke();
+    g.fillStyle = '#8fa3b5';
+    g.font = `400 25px ${POSTER_FONT}`;
+    const dt = d.created_at ? String(d.created_at).slice(0, 10) : '';
+    g.fillText(`写下的人：${d.author_nickname || '路过的人'}　${dt}`, 56, divY + 54);
+
+    // 底部：二维码 + 引导语
+    const img = new Image();
+    img.onload = () => {
+      g.drawImage(img, 56, H - 56 - 170, 170, 170);
+      g.fillStyle = '#dfe9f5';
+      g.font = `600 30px ${POSTER_FONT}`;
+      g.fillText('这条路的故事，从这里看', 256, H - 128);
+      g.fillStyle = '#7d92a6';
+      g.font = `400 22px ${POSTER_FONT}`;
+      g.fillText('匿名 · 不评价 · 只是看见', 256, H - 88);
+      resolve(c.toDataURL('image/png'));
+    };
+    img.onerror = () => reject(new Error('二维码图片没加载出来'));
+    img.src = POSTER_QR;
+  });
+}
+
+$('btnPoster').addEventListener('click', async () => {
+  if (!currentDetail) return;
+  const layer = $('posterLayer');
+  const btn = $('btnPoster');
+  btn.disabled = true;
+  try {
+    const url = await drawPoster(currentDetail);
+    $('posterImg').src = url;
+    layer.hidden = false;
+  } catch (e) {
+    alert('海报没画出来：' + ((e && e.message) || '稍后再试'));
+  } finally {
+    btn.disabled = false;
+  }
+});
+$('btnPosterClose').addEventListener('click', () => { $('posterLayer').hidden = true; });
+$('posterLayer').addEventListener('click', (e) => {
+  if (e.target === $('posterLayer')) $('posterLayer').hidden = true;
 });
 
 /* ---------- 补写 ---------- */

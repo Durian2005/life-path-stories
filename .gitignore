@@ -26,3 +26,7 @@ desktop.ini
 
 # 调试截图
 /_*.png
+
+# 海报二维码资产：内嵌路演链接（含 sharecode 与门禁口令 k），不入公开仓库。
+# 部署用本地文件；重建命令见 design/migration_v11_resonate.sql 文末注释
+app/assets/qr-share.png

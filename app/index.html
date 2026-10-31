@@ -6,9 +6,9 @@
 <!-- 受控预览：不让搜索引擎收录（PRD F0） -->
 <meta name="robots" content="noindex, nofollow">
 <title>人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261031x">
+<link rel="stylesheet" href="assets/style.css?v=20261101a">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261031x"></script>
+<script src="assets/theme.js?v=20261101a"></script>
 </head>
 <body>
 
@@ -124,6 +124,8 @@
         <span class="section__meta">人生路径 · 01</span>
       </a>
       <p class="section__desc">选一个最贴近现在的，看看走过这条路的人。</p>
+      <!-- V1.1 统计条：数据来自 api_stats，空库时保持隐藏 -->
+      <p class="statline" id="statline" hidden></p>
       <div class="paths" id="paths" role="group" aria-label="按主题选择"></div>
     </section>
 
@@ -182,9 +184,9 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="assets/cloud-config.js?v=20261031x"></script>
-<script src="assets/api.js?v=20261031x"></script>
-<script src="assets/boot.js?v=20261031x"></script>
+<script src="assets/cloud-config.js?v=20261101a"></script>
+<script src="assets/api.js?v=20261101a"></script>
+<script src="assets/boot.js?v=20261101a"></script>
 <script>
 /* ---------- 夜空星星 ----------
    放在最前面：它不依赖 Renlu，万一 SDK 没加载也不会跟着失效。
@@ -436,7 +438,69 @@ function makeCard(s) {
   meta.append(time, who, cnt);
   a.appendChild(meta);
 
+  // V1.1 共鸣入口：列表不直接带计数，先占位，hydrateResonate 回来再填真数
+  const res = document.createElement('span');
+  res.className = 'story__resonate';
+  res.dataset.id = s.id;
+  res.textContent = '◎ …';
+  if (s.is_sample) res.dataset.static = '1';   // 示例内容服务端拒绝打点，只展示不可点
+  else res.setAttribute('role', 'button');
+  a.appendChild(res);
+
   return a;
+}
+
+/* ---------- V1.1 共鸣与统计 ---------- */
+
+/* 列表渲染完后批量拉一次计数和「我是否点过」，逐张卡片回填 */
+function hydrateResonate(items) {
+  const ids = items.filter((s) => !s.is_sample).map((s) => s.id);
+  if (!ids.length) return;
+  api.resonateState(ids).then((r) => {
+    (r.items || []).forEach((x) => {
+      const el = elList.querySelector(`.story__resonate[data-id="${x.story_id}"]`);
+      if (!el) return;
+      if (x.resonated) {
+        el.dataset.done = '1';
+        el.classList.add('story__resonate--done');
+        el.textContent = '◎ 你也走过这段';
+      } else {
+        el.textContent = `◎ ${x.resonate_count || 0} 人也走过`;
+      }
+    });
+  }).catch(() => { /* 计数拿不到不影响看内容 */ });
+}
+
+/* 事件委托绑一次：卡片本身是 <a>，点共鸣要拦掉默认跳转 */
+elList.addEventListener('click', (e) => {
+  const b = e.target.closest('.story__resonate');
+  if (!b || b.dataset.static || b.dataset.done || b.dataset.pending) return;
+  e.preventDefault();
+  e.stopPropagation();
+  b.dataset.pending = '1';
+  api.resonate(b.dataset.id).then((r) => {
+    b.dataset.done = '1';
+    b.classList.add('story__resonate--done');
+    b.textContent = `◎ 你也走过这段 · 共 ${r.resonate_count} 人`;
+  }).catch((err) => {
+    delete b.dataset.pending;
+    // 41001 = 已经打过点（换设备等边界），本地直接置为已点
+    if (err instanceof ApiError && err.code === 41001) {
+      b.dataset.done = '1';
+      b.classList.add('story__resonate--done');
+    }
+    // 其它错误保持可再点
+  });
+});
+
+async function loadStats() {
+  const el = $('statline');
+  try {
+    const d = await api.stats();
+    if (!d || !d.stories) return;              // 空库不显示，不吓到第一批观众
+    el.hidden = false;
+    el.textContent = `已有 ${d.travelers} 位旅人，留下 ${d.stories} 个路标，其中 ${d.resolved} 段路已走完`;
+  } catch (e) { /* 统计只是装饰，拿不到就安静地不显示 */ }
 }
 
 /* 追加一页：只往后加，已有卡片不动（R3-7 的后半句） */
@@ -621,6 +685,7 @@ async function load(append = false) {
     if (state.page === 1) elCount.textContent = `共 ${r.total} 条`;
 
     const added = append ? appendList(items) : renderList(items);
+    hydrateResonate(items);                    // V1.1：回填共鸣计数，不阻塞列表
     ok = true;
 
     if (!items.length && !added) renderFoot('borrow');
@@ -695,6 +760,7 @@ syncTitle();
 renderPaths({});
 loadTopics();
 load();
+loadStats();
 
 if (!cloudReady()) console.info('[首页] 云端客户端未注入，当前为版式占位状态');
 </script>

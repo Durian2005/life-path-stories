@@ -237,6 +237,23 @@ const api = {
     return call('api_story_thanks', { p_token: session.token, p_story_id: id });
   },
 
+  /* A-16 共鸣「我也走过这段」。同一设备同一条只计一次（V1.1 新增） */
+  async resonate(id) {
+    await ensureSession();
+    return call('api_story_resonate', { p_token: session.token, p_story_id: id });
+  },
+
+  /* A-17 批量查共鸣状态：ids → [{story_id, resonate_count, resonated}]（V1.1） */
+  async resonateState(ids) {
+    await ensureSession();
+    return call('api_resonate_state', { p_token: session.token, p_story_ids: ids });
+  },
+
+  /* A-18 首页统计：N 位旅人 / M 个路标 / K 段已走完（V1.1，无需会话） */
+  async stats() {
+    return call('api_stats', {});
+  },
+
   /* A-12 我的经历 */
   async myStories({ page = 1, size = 10 } = {}) {
     await ensureSession();
