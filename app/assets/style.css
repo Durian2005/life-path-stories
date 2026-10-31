@@ -136,7 +136,9 @@ button { font-family: inherit; }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 66% center;
+  /* 垂直方向 72%：画面往下取，把山路上那两个人整个包进来。
+     原来是 center，只到人物腰部以下就被容器底边切断了。 */
+  object-position: 66% 72%;
 }
 
 .hero__inner {
@@ -144,6 +146,14 @@ button { font-family: inherit; }
   z-index: 1;
   max-width: 460px;
   padding: 62px 0 66px;
+  /* 宽屏下 hero 只有 300px 出头，插画被压成 3.6:1 的扁条，
+     cover 只能取到原图中间五分之二，人的腿脚全被裁掉。
+     给一个最小高度，让容器比例接近原画，人物才进得来。 */
+  min-height: 460px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;  /* 文字留在原来的高度：居中会让最后一行说明落到灌木上，看不清 */
+  align-items: flex-start;      /* 不加这句，按钮会被 flex 拉伸成整行 */
 }
 
 .hero__eyebrow {
@@ -179,7 +189,7 @@ button { font-family: inherit; }
   gap: 6px;
   font-size: 11.5px;
   color: var(--ink-2);
-  margin: 16px 0 0;
+  margin: 16px 0 18px;
 }
 
 .hero__badge {
@@ -622,7 +632,7 @@ button { font-family: inherit; }
 @media (max-width: 860px) {
   .wrap { padding: 0 24px; }
   .stories { grid-template-columns: 1fr; }
-  .hero__inner { max-width: 420px; padding: 48px 0 52px; }
+  .hero__inner { max-width: 420px; padding: 48px 0 52px; min-height: 420px; }
   .hero__badge { display: none; }
   .foot { padding: 20px 0 36px; }
 }
@@ -640,6 +650,10 @@ button { font-family: inherit; }
   .hero__inner {
     max-width: none;
     padding: 24px 0 30px;
+    /* 手机上插画是图片在上、文字在下，不需要桌面那个最小高度，
+       否则文字下面会空出一大块 */
+    min-height: 0;
+    display: block;
   }
   .hero__title { text-shadow: none; }
   .paths { grid-template-columns: 1fr; }
