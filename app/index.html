@@ -6,9 +6,9 @@
 <!-- 受控预览：不让搜索引擎收录（PRD F0） -->
 <meta name="robots" content="noindex, nofollow">
 <title>人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261031e">
+<link rel="stylesheet" href="assets/style.css?v=20261031f">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261031e"></script>
+<script src="assets/theme.js?v=20261031f"></script>
 </head>
 <body>
 
@@ -117,9 +117,10 @@
     <div class="banner" id="banner" hidden></div>
 
     <section class="section">
-      <!-- 标题可点：手机上主题卡占掉近一屏，点标题直接下滑到内容 -->
-      <div class="section__head section__head--jump" id="pathsHead" role="button" tabindex="0"
-           aria-label="跳到下面的内容列表">
+      <!-- 标题可点：手机上主题卡占掉近一屏，点标题直接下滑到内容。
+           用 <a href="#stories"> 而不是 div+JS：脚本万一没绑上，原生锚点照样能跳。 -->
+      <a class="section__head section__head--jump" id="pathsHead" href="#stories"
+         aria-label="跳到下面的内容列表">
         <h2 class="section__title">
           你正走在哪一段？
           <span class="section__jump" aria-hidden="true">
@@ -130,7 +131,7 @@
           </span>
         </h2>
         <span class="section__meta">人生路径 · 01</span>
-      </div>
+      </a>
       <p class="section__desc">选一个最贴近现在的，看看走过这条路的人。</p>
       <div class="paths" id="paths" role="group" aria-label="按主题选择"></div>
     </section>
@@ -190,9 +191,9 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="assets/cloud-config.js?v=20261031e"></script>
-<script src="assets/api.js?v=20261031e"></script>
-<script src="assets/boot.js?v=20261031e"></script>
+<script src="assets/cloud-config.js?v=20261031f"></script>
+<script src="assets/api.js?v=20261031f"></script>
+<script src="assets/boot.js?v=20261031f"></script>
 <script>
 const { api, ApiError, cloudReady } = window.Renlu;
 
@@ -597,18 +598,19 @@ document.querySelectorAll('.tabs__item').forEach((btn) => {
 });
 
 /* 点「你正走在哪一段？」直接滑到内容：手机上主题卡占掉近一屏，
-   想读故事还得先手动滑一段，把这个动作省掉 */
+   想读故事还得先手动滑一段，把这个动作省掉。
+   元素本身是 <a href="#stories">，脚本只负责把「瞬间跳」换成「平滑滚」；
+   脚本没执行时浏览器也会原生跳过去，不会出现点了没反应。 */
 const elJump = $('pathsHead');
 
-function jumpToStories() {
+function jumpToStories(ev) {
   const target = $('stories');
-  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (!target) return;
+  if (ev) ev.preventDefault();
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 elJump.addEventListener('click', jumpToStories);
-elJump.addEventListener('keydown', (ev) => {
-  if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); jumpToStories(); }
-});
 
 $('showAll').addEventListener('click', (ev) => {
   ev.preventDefault();

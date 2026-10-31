@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>进入 · 人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261031e">
+<link rel="stylesheet" href="assets/style.css?v=20261031f">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261031e"></script>
+<script src="assets/theme.js?v=20261031f"></script>
 </head>
 <body class="gate-body">
 
@@ -45,9 +45,9 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="assets/cloud-config.js?v=20261031e"></script>
-<script src="assets/api.js?v=20261031e"></script>
-<script src="assets/boot.js?v=20261031e"></script>
+<script src="assets/cloud-config.js?v=20261031f"></script>
+<script src="assets/api.js?v=20261031f"></script>
+<script src="assets/boot.js?v=20261031f"></script>
 <script>
 (function () {
   const form = document.getElementById('form');
@@ -66,7 +66,7 @@
   /* 静态托管不发 Cache-Control，手机浏览器会按「上次修改时间」自己算一段缓存期，
      改完代码观众可能还看着旧的样式表。跳转时带一个版本参数绕开它。
      改前端后记得把 BUILD 一起改掉。 */
-  const BUILD = '20261031e';
+  const BUILD = '20261031f';
   function withBuild(u) {
     if (new RegExp('[?&]v=' + BUILD).test(u)) return u;
     return u + (u.indexOf('?') >= 0 ? '&' : '?') + 'v=' + BUILD;

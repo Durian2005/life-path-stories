@@ -2003,6 +2003,8 @@ button.thanks:disabled { background: transparent; }
 #stories { scroll-margin-top: 68px; }
 
 .section__head--jump { cursor: pointer; }
+/* 这一行是 <a>（原生锚点兜底），但外观还得是标题，不是链接 */
+a.section__head--jump { color: inherit; text-decoration: none; }
 .section__head--jump:hover .section__title { color: var(--brand); }
 .section__head--jump:focus-visible {
   outline: 2px solid var(--brand);
