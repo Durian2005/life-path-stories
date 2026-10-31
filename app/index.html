@@ -7,6 +7,8 @@
 <meta name="robots" content="noindex, nofollow">
 <title>人生的路你走到哪了</title>
 <link rel="stylesheet" href="assets/style.css">
+<!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
+<script src="assets/theme.js"></script>
 </head>
 <body>
 
@@ -26,6 +28,19 @@
     <div class="nav__right">
       <span class="nav__tagline">每一段路，都值得被看见</span>
       <span class="pill">探索版</span>
+      <button class="theme-toggle" type="button" aria-label="切换白天 / 夜间" aria-pressed="false">
+        <span class="theme-toggle__opt" data-mode="light" aria-hidden="true" title="白天">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+          </svg>
+        </span>
+        <span class="theme-toggle__opt" data-mode="dark" aria-hidden="true" title="夜间">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+          </svg>
+        </span>
+      </button>
       <a class="nav__add" href="write.html" aria-label="写一段我的经历">+</a>
     </div>
   </div>
@@ -33,6 +48,24 @@
 
 <header class="hero">
   <img class="hero__img" src="assets/hero.jpg" alt="">
+
+  <!-- 夜景四层：白天 display:none，完全不参与布局；夜间才铺在图上（样式在 style.css 末尾） -->
+  <div class="hero__sky"></div>
+  <div class="hero__moonlight"></div>
+  <div class="hero__stars"></div>
+  <span class="hero__moon" aria-hidden="true">
+    <i></i>
+    <svg viewBox="0 0 64 64">
+      <defs>
+        <mask id="moonMask">
+          <rect width="64" height="64" fill="#fff"/>
+          <circle cx="45" cy="23" r="25" fill="#000"/>
+        </mask>
+      </defs>
+      <circle cx="31" cy="33" r="25" fill="#fbf6e0" mask="url(#moonMask)"/>
+    </svg>
+  </span>
+
   <div class="wrap">
     <div class="hero__inner">
       <p class="hero__eyebrow">
@@ -204,21 +237,36 @@ function icon(name) {
 
 /* ---------- 渲染：路径卡 ---------- */
 
-function renderPaths(counts = {}) {
+function renderPaths(counts = {}, openSet = null) {
   elPaths.replaceChildren();
 
   TOPICS.forEach((t) => {
+    const n = counts[t.code];
+    // 未开放（不在 api_topics 的 open_codes 里）：显示「筹备中」，不可点（AC-08）
+    const pending = Boolean(openSet) && !openSet.has(t.code);
+    // 已开放但一条内容都没有：置灰、点击无效（AC-12）
+    const empty = !pending && n === 0;
+    const blocked = pending || empty;
+
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'path';
     btn.dataset.topic = t.code;
     btn.setAttribute('aria-pressed', String(state.topic === t.code));
+    if (pending) btn.dataset.state = 'pending';
+    else if (empty) btn.dataset.state = 'empty';
+    btn.disabled = blocked;
+    if (blocked) btn.setAttribute('aria-disabled', 'true');
 
-    const n = counts[t.code];
+    // 条数徽标只在「有真实内容且已开放」时出现，0 与筹备中都不显示数字
+    const badge = pending
+      ? '<span class="path__flag">筹备中</span>'
+      : (n ? `<span class="path__count">${n}</span>` : '');
+
     btn.innerHTML = `
       ${icon(t.icon)}
-      <p class="path__title">${t.name}${n ? `<span class="path__count">${n}</span>` : ''}</p>
-      <p class="path__desc">${t.desc}</p>
+      <p class="path__title">${t.name}${badge}</p>
+      <p class="path__desc">${pending ? '这条路还在等第一批路标' : t.desc}</p>
       <span class="path__arrow">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -227,12 +275,14 @@ function renderPaths(counts = {}) {
       </span>
       <span class="path__mark">${CHECK}</span>`;
 
-    btn.addEventListener('click', () => {
-      state.topic = t.code;
-      renderPaths(counts);
-      syncTitle();
-      load();
-    });
+    if (!blocked) {
+      btn.addEventListener('click', () => {
+        state.topic = t.code;
+        renderPaths(counts, openSet);
+        syncTitle();
+        load();
+      });
+    }
 
     elPaths.appendChild(btn);
   });
@@ -441,7 +491,9 @@ async function loadTopics() {
     const t = await api.topics();
     const counts = {};
     (t.items || []).forEach((x) => { counts[x.topic_code] = x.count; });
-    renderPaths(counts);
+    // open_codes 决定「哪些主题已开放」，不在其中的按「筹备中」渲染（AC-08）
+    const open = Array.isArray(t.open_codes) ? new Set(t.open_codes) : null;
+    renderPaths(counts, open);
   } catch (e) {
     if (e instanceof ApiError && e.isGateClosed) { location.replace('gate.html'); return; }
     // 条数取不到不影响读列表，主题卡保持无数字

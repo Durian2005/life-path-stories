@@ -350,6 +350,34 @@ button { font-family: inherit; }
   color: var(--ink-3);
 }
 
+/* 未开放 / 零内容：置灰、无跳转、无可点光标（AC-08 / AC-12） */
+.path:disabled {
+  cursor: default;
+  opacity: 0.55;
+  box-shadow: none;
+  border-style: dashed;
+}
+
+.path:disabled:hover {
+  border-color: var(--line);
+  transform: none;
+  box-shadow: none;
+}
+
+.path:disabled .path__arrow { display: none; }
+
+.path__flag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  vertical-align: 1px;
+}
+
 /* ---------- 工具条：搜索 + 状态 ---------- */
 
 .toolbar {
@@ -1355,4 +1383,614 @@ button.thanks:disabled { background: transparent; }
   background: var(--brand-weak);
   border-left-color: var(--brand);
   color: var(--brand-ink);
+}
+
+/* ============================================================
+   日夜切换按钮
+   ------------------------------------------------------------
+   两段式（太阳 / 月亮），整颗按钮表示「夜间是否打开」。
+   位置：顶栏里跟着 .nav__right 走；门页没有顶栏，改为浮在右上角。
+   ============================================================ */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: border-color 0.18s ease;
+}
+
+.theme-toggle:hover { border-color: var(--brand-line); }
+
+.theme-toggle__opt {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.theme-toggle__opt[data-on="true"] {
+  background: var(--brand-weak);
+  color: var(--brand);
+}
+
+.theme-toggle svg { width: 14px; height: 14px; }
+
+/* 门页：没有顶栏，浮在右上角。卡片是居中的，右上角在任何屏宽下都是空的 */
+.gate-body .theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 30;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================================
+   深色模式（夜间）覆盖层
+   ------------------------------------------------------------
+   上面那一千多行一行不动，这里只做两件事：
+     ① 换掉 :root 的配色变量
+     ② 覆盖少数写死色值的规则（#fff / #fdf4f2 / rgba(255,255,255,…) / 浅灰渐变）
+   <html data-theme="dark"> 时生效，去掉就回到白天，没有第三种状态。
+   ============================================================ */
+
+[data-theme="dark"] {
+  /* 让原生控件跟着变暗：复选框、搜索框的清除键、滚动条、下拉面板 */
+  color-scheme: dark;
+  background: #0f1512;
+
+  --bg:        #0f1512;
+  --bg-soft:   #131a16;
+  --surface:   #17201b;
+  --ink:       #e9efe9;
+  --ink-2:     #9fada4;
+  --ink-3:     #6f7d75;
+  --line:      #24302a;
+  --line-soft: #1c2620;
+  /* 深绿 #315c4c 放在深底上等于没有，品牌色必须提亮 */
+  --brand:     #82b89b;
+  --brand-ink: #d3e7db;
+  --brand-weak:#182720;
+  --brand-line:#2c4738;
+  --accent:    #d98070;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.34);
+  --shadow-md: 0 10px 26px rgba(0, 0, 0, 0.42);
+}
+
+/* ---------- 顶栏 ---------- */
+
+[data-theme="dark"] .nav {
+  background: rgba(15, 21, 18, 0.82);
+  border-bottom-color: var(--line-soft);
+}
+
+[data-theme="dark"] .nav__brand { color: var(--brand-ink); }
+
+[data-theme="dark"] .pill {
+  background: var(--brand-weak);
+  border: 1px solid var(--brand-line);
+  color: #9ccdb2;
+}
+
+[data-theme="dark"] .nav__add {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--brand);
+}
+
+/* ============================================================
+   HERO 夜景 —— 深色模式的重点
+   ------------------------------------------------------------
+   四层，从下到上：
+     ① 原图：只降到 .58，保住山野 / 小路 / 两个人物
+     ② 夜空层：上方近乎不透明的深蓝，到 58% 处几乎透明
+        —— 58% 是天空与山脊的交界，天空被压成夜、地面不动。
+        这个断点位置是整套做法的核心，挪动它整张图就会发灰。
+     ③ 月光带 + 暗角：给画面一个光源方向（右上方）和景深
+     ④ 星点与月牙：月亮落在原图左侧那片空白天空里
+   ============================================================ */
+
+/* 四个装饰层的基础规则必须写在这里，不能写进 [data-theme="dark"]。
+   否则切回白天时 position:absolute 失效，月亮变回普通 span 参与文档流，
+   把 hero 撑高 74px，object-fit:cover 跟着放大整张图。 */
+.hero__sky,
+.hero__moonlight,
+.hero__stars,
+.hero__moon {
+  display: none;
+  position: absolute;
+  pointer-events: none;
+}
+
+.hero__sky,
+.hero__moonlight,
+.hero__stars { inset: 0; }
+
+[data-theme="dark"] .hero {
+  background: #0a1016;
+  border-bottom-color: var(--line-soft);
+}
+
+/* ① 原图：留结构，只做冷调处理 */
+[data-theme="dark"] .hero__img {
+  filter: brightness(0.58) saturate(0.5) hue-rotate(-16deg) contrast(1.04);
+}
+
+/* ② 夜空：上重下轻 */
+[data-theme="dark"] .hero__sky {
+  display: block;
+  z-index: 1;
+  background: linear-gradient(180deg,
+    rgba(7, 13, 26, 0.95) 0%,
+    rgba(9, 17, 32, 0.86) 20%,
+    rgba(11, 21, 35, 0.56) 40%,
+    rgba(12, 22, 30, 0.16) 58%,
+    rgba(10, 16, 18, 0.08) 76%,
+    rgba(6, 11, 12, 0.4) 100%);
+}
+
+/* ③ 月光带：光源在右上方，落一片冷白在右坡上 */
+[data-theme="dark"] .hero__moonlight {
+  display: block;
+  z-index: 2;
+  mix-blend-mode: screen;
+  background: radial-gradient(ellipse 48% 64% at 71% 28%,
+    rgba(228, 240, 226, 0.17) 0%,
+    rgba(198, 220, 208, 0.07) 36%,
+    transparent 66%);
+}
+
+/* 暗角：把四角压下去，视线收拢到中间那条路 */
+[data-theme="dark"] .hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse 84% 94% at 52% 44%,
+    transparent 44%, rgba(4, 8, 10, 0.55) 100%);
+}
+
+/* ④ 星点 */
+[data-theme="dark"] .hero__stars {
+  display: block;
+  z-index: 3;
+  background-image:
+    radial-gradient(1.7px 1.7px at 8% 26%,  rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(1.2px 1.2px at 15% 12%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1.5px 1.5px at 23% 34%, rgba(255, 255, 255, 0.70), transparent),
+    radial-gradient(1.1px 1.1px at 31% 18%, rgba(255, 255, 255, 0.50), transparent),
+    radial-gradient(1.6px 1.6px at 38% 40%, rgba(255, 255, 255, 0.62), transparent),
+    radial-gradient(1.2px 1.2px at 46% 14%, rgba(255, 255, 255, 0.48), transparent),
+    radial-gradient(1.4px 1.4px at 53% 30%, rgba(255, 255, 255, 0.58), transparent),
+    radial-gradient(1.1px 1.1px at 61% 9%,  rgba(255, 255, 255, 0.44), transparent),
+    radial-gradient(1.5px 1.5px at 84% 12%, rgba(255, 255, 255, 0.60), transparent),
+    radial-gradient(1.2px 1.2px at 91% 27%, rgba(255, 255, 255, 0.46), transparent),
+    radial-gradient(1.3px 1.3px at 96% 8%,  rgba(255, 255, 255, 0.52), transparent);
+}
+
+/* 月牙：一个大圆被另一个圆挖掉（SVG mask）。
+   内弧的位置靠 mask 里的 circle 控制，不要用 CSS 去减半径——算错会画出空形状。
+   光晕用 <i> 的径向渐变，不能用 drop-shadow：那会沿 SVG 边界留一圈方框。 */
+[data-theme="dark"] .hero__moon {
+  display: block;
+  z-index: 3;
+  left: 62%;
+  top: 9%;
+  width: 74px;
+  height: 74px;
+}
+
+[data-theme="dark"] .hero__moon svg { display: block; width: 100%; height: 100%; }
+
+[data-theme="dark"] .hero__moon i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 330%;
+  height: 330%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle,
+    rgba(255, 250, 226, 0.34) 0%,
+    rgba(255, 248, 218, 0.12) 32%,
+    transparent 66%);
+}
+
+/* 文字层要压在夜空与暗角之上 */
+[data-theme="dark"] .hero__inner,
+[data-theme="dark"] .hero__badge { z-index: 4; }
+
+[data-theme="dark"] .hero__eyebrow { color: #8fc4a7; }
+
+[data-theme="dark"] .hero__title {
+  color: #f2f7f1;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .hero__text { color: #b4c3b9; }
+
+/* 「不必赶路」那行在暗底上最容易糊，单独提亮并加投影 */
+[data-theme="dark"] .hero__note {
+  color: #a9b8ae;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.65);
+}
+
+[data-theme="dark"] .hero__badge {
+  background: rgba(17, 26, 22, 0.74);
+  border: 1px solid rgba(130, 184, 155, 0.26);
+  color: #bfd2c6;
+}
+
+/* ---------- 按钮 ---------- */
+
+/* 夜间品牌色被提亮成了浅绿，主按钮的文字必须反过来用深色，否则白字压浅绿看不清 */
+[data-theme="dark"] .btn--primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #0b1410;
+}
+
+[data-theme="dark"] .btn--ghost {
+  color: var(--brand-ink);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .btn--danger { color: var(--accent); border-color: var(--accent); }
+
+/* ---------- 区块与主题卡 ---------- */
+
+[data-theme="dark"] .section__title { color: var(--brand-ink); }
+[data-theme="dark"] .section__more { color: var(--brand); }
+
+[data-theme="dark"] .path {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .path:not(:disabled):hover {
+  background: #1a241e;
+  border-color: var(--brand-line);
+}
+
+[data-theme="dark"] .path[aria-pressed="true"] {
+  background: var(--brand-weak);
+  border-color: var(--brand-line);
+}
+
+[data-theme="dark"] .path__icon { color: var(--brand); }
+[data-theme="dark"] .path__title { color: var(--brand-ink); }
+[data-theme="dark"] .path__count { color: var(--ink-3); }
+
+/* 置灰卡在暗底上会连边框一起消失，opacity 收到 .62 就够，再低就成了空白 */
+[data-theme="dark"] .path:disabled {
+  background: #131a16;
+  border-color: #1e2823;
+  opacity: 0.62;
+}
+
+[data-theme="dark"] .path:disabled:hover { border-color: #1e2823; }
+
+[data-theme="dark"] .path__flag {
+  color: var(--ink-3);
+  border-color: var(--line);
+}
+
+/* ---------- 搜索与筛选 ---------- */
+
+[data-theme="dark"] .search__input {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .search__input::placeholder { color: var(--ink-3); }
+
+[data-theme="dark"] .search__input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(130, 184, 155, 0.16);
+}
+
+/* 凹槽：底色比页面更深一档才像「槽」，选中项再抬起来 */
+[data-theme="dark"] .tabs {
+  background: #0a0f0c;
+  border: 1px solid var(--line);
+}
+
+[data-theme="dark"] .tabs__item { color: var(--ink-2); }
+
+[data-theme="dark"] .tabs__item[aria-selected="true"] {
+  background: var(--brand-weak);
+  color: var(--brand-ink);
+  box-shadow: inset 0 0 0 1px var(--brand-line);
+}
+
+/* ---------- 故事卡 ---------- */
+
+[data-theme="dark"] .story {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .story:not(:disabled):hover {
+  background: #1a241e;
+  border-color: var(--brand-line);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="dark"] .story__title { color: var(--brand-ink); }
+
+/* ---------- 标签 ---------- */
+
+[data-theme="dark"] .tag--open {
+  background: rgba(125, 101, 53, 0.22);
+  color: #cbb07a;
+}
+
+[data-theme="dark"] .tag--resolved {
+  background: rgba(130, 184, 155, 0.16);
+  color: #9ccdb2;
+}
+
+[data-theme="dark"] .tag--plain {
+  background: var(--bg-soft);
+  border-color: var(--line);
+  color: var(--ink-2);
+}
+
+/* 「示例」沿用白天的砖红语义，别做成灰片，否则和状态标签混在一起 */
+[data-theme="dark"] .badge {
+  background: rgba(217, 128, 112, 0.12);
+  border-color: rgba(217, 128, 112, 0.34);
+  color: #e9a79a;
+}
+
+/* ---------- 提示条 ---------- */
+
+[data-theme="dark"] .banner {
+  background: rgba(130, 184, 155, 0.08);
+  border-left-color: var(--brand-line);
+  color: var(--ink-2);
+}
+
+[data-theme="dark"] .banner--warn {
+  background: rgba(217, 128, 112, 0.1);
+  border-left-color: rgba(217, 128, 112, 0.5);
+  color: #e9a79a;
+}
+
+[data-theme="dark"] .banner--ok {
+  background: var(--brand-weak);
+  border-left-color: var(--brand);
+  color: var(--brand-ink);
+}
+
+/* ---------- 空态 / 骨架 ---------- */
+
+[data-theme="dark"] .empty {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .empty__title { color: var(--brand-ink); }
+
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, #1b2420 25%, #222e28 50%, #1b2420 75%);
+  background-size: 200% 100%;
+}
+
+[data-theme="dark"] .skel__line {
+  background: linear-gradient(90deg, var(--line-soft) 25%, #202b25 50%, var(--line-soft) 75%);
+  background-size: 200% 100%;
+}
+
+/* ---------- 页脚 ---------- */
+
+[data-theme="dark"] .foot { border-top-color: var(--line-soft); }
+
+/* ============================================================
+   门页
+   ============================================================ */
+
+[data-theme="dark"] .gate-body {
+  background: #0d1310;
+}
+
+[data-theme="dark"] .gate {
+  border-color: var(--line);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .gate__input {
+  background: #121917;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .gate__input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(130, 184, 155, 0.16);
+}
+
+/* ============================================================
+   阅读页 / 写页
+   ============================================================ */
+
+[data-theme="dark"] .detail__meta { border-bottom-color: var(--line); }
+[data-theme="dark"] .detail__foot { border-top-color: var(--line); }
+[data-theme="dark"] .detail__title { color: var(--brand-ink); }
+[data-theme="dark"] .field__label,
+[data-theme="dark"] .compose__label,
+[data-theme="dark"] .write__title,
+[data-theme="dark"] .statebox__title { color: var(--brand-ink); }
+
+[data-theme="dark"] .field__input {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .field__input::placeholder { color: var(--ink-3); }
+
+[data-theme="dark"] .field__input:focus {
+  border-color: var(--brand-line);
+  box-shadow: 0 0 0 3px rgba(130, 184, 155, 0.14);
+}
+
+[data-theme="dark"] .field__fixed {
+  background: var(--bg-soft);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .compose__form {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .agree,
+[data-theme="dark"] .idcard {
+  background: var(--brand-weak);
+  border-color: var(--brand-line);
+}
+
+[data-theme="dark"] .agree__title,
+[data-theme="dark"] .idcard__title { color: var(--brand-ink); }
+
+[data-theme="dark"] .chip,
+[data-theme="dark"] .choice__item {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink-2);
+}
+
+[data-theme="dark"] .chip:hover,
+[data-theme="dark"] .choice__item:hover { border-color: var(--brand-line); }
+
+[data-theme="dark"] .chip[aria-pressed="true"],
+[data-theme="dark"] .choice__item[aria-pressed="true"] {
+  background: var(--brand-weak);
+  border-color: var(--brand-line);
+  color: var(--brand-ink);
+}
+
+[data-theme="dark"] .choice__title { color: var(--brand-ink); }
+
+[data-theme="dark"] .hint {
+  background: var(--bg-soft);
+  border-left-color: var(--brand-line);
+}
+
+[data-theme="dark"] .hint--warn {
+  background: rgba(217, 128, 112, 0.08);
+  border-left-color: var(--accent);
+}
+
+/* 出错区统一用同一层砖红底：白天是 #fdf4f2，夜里换成半透明红，不刺眼 */
+[data-theme="dark"] .form__err:not(:empty),
+[data-theme="dark"] .previewfoot__err:not(:empty),
+[data-theme="dark"] .danger {
+  background: rgba(217, 128, 112, 0.08);
+  border-left-color: var(--accent);
+}
+
+[data-theme="dark"] .danger__text { color: #e0a99f; }
+[data-theme="dark"] .danger__text strong { color: var(--accent); }
+
+[data-theme="dark"] .form__foot { border-top-color: var(--line); }
+
+/* ============================================================
+   我的经历
+   ============================================================ */
+
+[data-theme="dark"] .codebox {
+  background: var(--surface);
+  border-color: var(--brand-line);
+}
+
+[data-theme="dark"] .codebox__code { color: var(--brand-ink); }
+
+[data-theme="dark"] .claim {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .claim__toggle { color: var(--ink); }
+[data-theme="dark"] .claim__toggle:hover { background: var(--bg-soft); }
+
+[data-theme="dark"] .mine__head { border-bottom-color: var(--line); }
+[data-theme="dark"] .mine__title { color: var(--brand-ink); }
+
+[data-theme="dark"] .row { border-bottom-color: var(--line-soft); }
+[data-theme="dark"] .row:hover { background: var(--bg-soft); }
+[data-theme="dark"] .row__title { color: var(--brand-ink); }
+
+[data-theme="dark"] button.thanks:hover:not(:disabled) {
+  background: rgba(217, 128, 112, 0.1);
+}
+
+[data-theme="dark"] button.thanks:disabled { background: transparent; }
+
+/* ============================================================
+   预览页
+   ============================================================ */
+
+[data-theme="dark"] .previewbar {
+  background: rgba(203, 176, 122, 0.14);
+  border-bottom-color: rgba(203, 176, 122, 0.28);
+  color: #cbb07a;
+}
+
+[data-theme="dark"] .selfcheck {
+  background: var(--bg-soft);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .selfcheck__title { color: var(--brand); }
+
+[data-theme="dark"] .previewfoot { border-top-color: var(--line); }
+
+[data-theme="dark"] .banner__act { color: var(--brand); border-bottom-color: var(--brand-line); }
+
+/* ---------- 切换按钮在夜间 ---------- */
+
+[data-theme="dark"] .theme-toggle {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+[data-theme="dark"] .theme-toggle:hover { border-color: var(--brand-line); }
+
+[data-theme="dark"] .theme-toggle__opt[data-on="true"] {
+  background: var(--brand-weak);
+  color: var(--brand);
+}
+
+[data-theme="dark"] .gate-body .theme-toggle {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- 窄屏微调 ---------- */
+
+@media (max-width: 680px) {
+  /* 手机上插画只有 200px 高，74px 的月亮会盖住太多画面，
+     收小到 58px 并右移一点，大致落在原图那颗太阳的位置上 */
+  [data-theme="dark"] .hero__moon {
+    left: 66%;
+    top: 8%;
+    width: 58px;
+    height: 58px;
+  }
+
+  /* 顶栏在窄屏要装下品牌 + 探索版 + 切换 + 加号，切换按钮再收一档 */
+  .theme-toggle { padding: 3px; }
+  .theme-toggle__opt { width: 24px; height: 24px; }
 }
