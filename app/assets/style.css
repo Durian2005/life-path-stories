@@ -1978,6 +1978,23 @@ button.thanks:disabled { background: transparent; }
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
+/* 门页静默通过时的那一行：撑住接近表单的高度，卡片不会忽大忽小 */
+.gate__entering {
+  padding: 26px 0 30px;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+}
+
+/* 窄屏主题卡改为两列：单列排 5 张要滚掉近一屏，故事列表被推得太远，
+   而观众点开链接最想先看到的是「有人写了什么」 */
+@media (max-width: 680px) {
+  .paths { grid-template-columns: repeat(2, 1fr); }
+  .paths .path:last-child { grid-column: span 2; }
+  .path { padding: 13px 13px 14px; }
+  .path__desc { font-size: 11.5px; line-height: 1.6; }
+}
+
 /* ---------- 窄屏微调 ---------- */
 
 @media (max-width: 680px) {

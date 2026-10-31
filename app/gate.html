@@ -29,7 +29,10 @@
 <main class="gate">
   <p class="gate__brand">人生的路你走到哪了</p>
   <h1 class="gate__title">这里是一段段真实的经历</h1>
-  <p class="gate__desc">内容还在小范围试读。<br>输入访问口令就能进去。</p>
+  <p class="gate__desc" id="desc">内容还在小范围试读。<br>输入访问口令就能进去。</p>
+
+  <!-- 带口令的链接：不渲染输入框，只显示这一行（路演时观众点开走的就是这条） -->
+  <p class="gate__entering" id="entering" hidden>正在进入…</p>
 
   <form class="gate__form" id="form" novalidate>
     <input class="gate__input" id="pass" type="password"
@@ -48,9 +51,17 @@
 <script>
 (function () {
   const form = document.getElementById('form');
+  const desc = document.getElementById('desc');
   const input = document.getElementById('pass');
   const submit = document.getElementById('submit');
   const err = document.getElementById('err');
+  const entering = document.getElementById('entering');
+
+  // 从哪来：门页不该把原链接吞掉，通过后回到原来那一页（AC-04）
+  const q = new URLSearchParams(location.search);
+  const rawTo = q.get('to') || 'index.html';
+  const to = /^https?:|^\/\//i.test(rawTo) ? 'index.html' : rawTo;
+  const key = q.get('k') || '';
 
   function fail(msg) {
     err.hidden = false;
@@ -59,7 +70,61 @@
     submit.textContent = '进 入';
   }
 
-  form.addEventListener('submit', async function (e) {
+  /* 静默通过失败时把表单放回来，别让人对着「正在进入…」干等 */
+  function fallbackToForm(msg) {
+    entering.hidden = true;
+    desc.hidden = false;
+    form.hidden = false;
+    fail(msg);
+    input.focus();
+  }
+
+  async function enter(pass, silent) {
+    try {
+      await window.Renlu.api.gateVerify(pass);   // 口令校验，拿到 gate_ok
+      await window.Renlu.api.sessionInit();      // 换正式 token，首次会建号
+      location.replace(finish());
+    } catch (ex) {
+      if (ex && ex.code === 42903) {
+        const msg = '试得有点多，过一会儿再来';
+        if (silent) fallbackToForm(msg); else fail(msg);
+        submit.disabled = true;
+        setTimeout(function () { submit.disabled = false; }, 20000);
+        return;
+      }
+      const msg = (ex && ex.message) || '进不去，稍后再试';
+      if (silent) fallbackToForm(msg); else fail(msg);
+    }
+  }
+
+  /* 静默通过后把 ?k= 从地址栏去掉：观众不该在网址里看到口令 */
+  function finish() {
+    if (!key) return to;
+    try {
+      const u = new URL(to, location.href);
+      u.searchParams.delete('k');
+      return (u.pathname.replace(/^\//, '') || 'index.html') + u.search;
+    } catch (e) {
+      return to;
+    }
+  }
+
+  // 已经有凭证：门口不再挡第二次
+  if (window.Renlu && window.Renlu.session && window.Renlu.session.token) {
+    location.replace(to);
+    return;
+  }
+
+  // 链接里带了口令（路演分享链接）：静默通过，不出现输入框
+  if (key) {
+    form.hidden = true;
+    desc.hidden = true;
+    entering.hidden = false;
+    enter(key, true);
+    return;
+  }
+
+  form.addEventListener('submit', function (e) {
     e.preventDefault();
     const pass = input.value.trim();
     if (!pass) { fail('先输入口令'); return; }
@@ -67,20 +132,7 @@
     err.hidden = true;
     submit.disabled = true;
     submit.textContent = '正在进入…';
-
-    try {
-      await window.Renlu.api.gateVerify(pass);   // 口令校验，拿到 gate_ok
-      await window.Renlu.api.sessionInit();      // 换正式 token，首次会建号
-      location.replace('index.html');
-    } catch (ex) {
-      if (ex && ex.code === 42903) {
-        fail('试得有点多，过一会儿再来');
-        submit.disabled = true;
-        setTimeout(function () { submit.disabled = false; }, 20000);
-        return;
-      }
-      fail((ex && ex.message) || '进不去，稍后再试');
-    }
+    enter(pass, false);
   });
 
   input.focus();

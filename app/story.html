@@ -280,7 +280,7 @@ $('btnThanks').addEventListener('click', async () => {
     btn.classList.add('thanks--done');
     btn.title = '你已经致谢过了';
   } catch (e) {
-    if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) { location.href = 'gate.html'; return; }
+    if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) { location.href = window.Renlu.gateUrl(); return; }
     $('thanksText').textContent = `没能致谢：${(e && e.message) || '稍后再试'}`;
     btn.disabled = false;
   }
@@ -345,7 +345,7 @@ async function load() {
     render(d);
   } catch (e) {
     if (e instanceof ApiError) {
-      if (e.isGateClosed || e.isAuthLost) { location.href = 'gate.html'; return; }
+      if (e.isGateClosed || e.isAuthLost) { location.href = window.Renlu.gateUrl(); return; }
       if (e.isNotFound) { show('missing'); return; }
     }
     $('failMsg').textContent = (e && e.message) || '稍后再试';

@@ -160,7 +160,7 @@ function fmtDate(iso) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function goGate() { location.href = 'gate.html'; }
+function goGate() { location.href = window.Renlu.gateUrl(); }
 
 function handleErr(e, target) {
   if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) { goGate(); return; }

@@ -235,7 +235,7 @@ async function publish() {
     setTimeout(() => location.replace('me.html?published=1'), 2500);
   } catch (ex) {
     if (ex instanceof ApiError) {
-      if (ex.isGateClosed || ex.isAuthLost) { location.href = 'gate.html'; return; }
+      if (ex.isGateClosed || ex.isAuthLost) { location.href = window.Renlu.gateUrl(); return; }
       if (ex.isRateLimited) {
         err.textContent = '发得有点快，歇十几分钟再发。内容还在。';
       } else if (ex.code === 40901) {

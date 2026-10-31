@@ -268,9 +268,24 @@ const api = {
   },
 };
 
+/**
+ * 去门页的地址，顺手把「从哪来」和「链接里的口令」带过去。
+ *
+ * 两件事都得带上，否则观众点开分享链接会看到口令输入框：
+ *   1. to=当前页：门页通过后回到原来那一页，而不是一律回首页（AC-04）
+ *   2. k=口令：路演分享链接把口令放在 ?k= 里，门页读到它才敢静默通过
+ */
+function gateUrl() {
+  const here = (location.pathname.split('/').pop() || 'index.html') + location.search;
+  const key = new URLSearchParams(location.search).get('k');
+  let url = 'gate.html?to=' + encodeURIComponent(here);
+  if (key) url += '&k=' + encodeURIComponent(key);
+  return url;
+}
+
 /* 挂到全局，供普通 <script> 使用。
    不用 ES module 是刻意的：file:// 下浏览器会以 CORS 为由拒绝加载相对模块，
    队友双击打开就看不到任何内容。 */
-global.Renlu = { ApiError, api, session, ensureSession, getDeviceId, setDeviceId, bindCloud, cloudReady, getNickname };
+global.Renlu = { ApiError, api, session, ensureSession, getDeviceId, setDeviceId, bindCloud, cloudReady, getNickname, gateUrl };
 
 })(window);

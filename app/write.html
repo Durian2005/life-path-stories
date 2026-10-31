@@ -366,7 +366,7 @@ async function saveEdit(d) {
     location.replace(`story.html?id=${encodeURIComponent(editId)}`);
   } catch (ex) {
     if (ex instanceof ApiError) {
-      if (ex.isGateClosed || ex.isAuthLost) { location.href = 'gate.html'; return; }
+      if (ex.isGateClosed || ex.isAuthLost) { location.href = window.Renlu.gateUrl(); return; }
       if (ex.code === 40901) fail('这条内容的状态变了，刷新页面看看');
       else fail(ex.message || '没能保存，稍后再试');
     } else {

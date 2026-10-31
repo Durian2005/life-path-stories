@@ -495,7 +495,7 @@ async function loadTopics() {
     const open = Array.isArray(t.open_codes) ? new Set(t.open_codes) : null;
     renderPaths(counts, open);
   } catch (e) {
-    if (e instanceof ApiError && e.isGateClosed) { location.replace('gate.html'); return; }
+    if (e instanceof ApiError && e.isGateClosed) { location.replace(window.Renlu.gateUrl()); return; }
     // 条数取不到不影响读列表，主题卡保持无数字
   }
 }
@@ -563,7 +563,7 @@ async function load(append = false) {
 function handleError(e) {
   // 没进站：直接去门页，不在这里解释原因
   if (e instanceof ApiError && e.isGateClosed) {
-    location.replace('gate.html');
+    location.replace(window.Renlu.gateUrl());
     return;
   }
   elCount.textContent = '没加载出来';
