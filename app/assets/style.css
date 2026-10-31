@@ -1458,21 +1458,23 @@ button.thanks:disabled { background: transparent; }
 [data-theme="dark"] {
   /* 让原生控件跟着变暗：复选框、搜索框的清除键、滚动条、下拉面板 */
   color-scheme: dark;
-  background: #0f1512;
+  background: #101a2b;
 
-  --bg:        #0f1512;
-  --bg-soft:   #131a16;
-  --surface:   #17201b;
-  --ink:       #e9efe9;
-  --ink-2:     #9fada4;
-  --ink-3:     #6f7d75;
-  --line:      #24302a;
-  --line-soft: #1c2620;
-  /* 深绿 #315c4c 放在深底上等于没有，品牌色必须提亮 */
-  --brand:     #82b89b;
-  --brand-ink: #d3e7db;
-  --brand-weak:#182720;
-  --brand-line:#2c4738;
+  /* 2026-10-31 深色从绿系换成蓝系（用户指定 #101a2b 深海军蓝）。
+     亮度关系与旧绿版一一对应，只换色相：主图与星空的 hero 部分不动。 */
+  --bg:        #101a2b;
+  --bg-soft:   #14202f;
+  --surface:   #182639;
+  --ink:       #e9eef4;
+  --ink-2:     #9fabb9;
+  --ink-3:     #6f7d8c;
+  --line:      #243347;
+  --line-soft: #1c2939;
+  /* 品牌色必须提亮，深色压深底等于没有 */
+  --brand:     #82b4d2;
+  --brand-ink: #d3e4f0;
+  --brand-weak:#182533;
+  --brand-line:#2c4a63;
   --accent:    #d98070;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.34);
@@ -1482,7 +1484,7 @@ button.thanks:disabled { background: transparent; }
 /* ---------- 顶栏 ---------- */
 
 [data-theme="dark"] .nav {
-  background: rgba(15, 21, 18, 0.82);
+  background: rgba(16, 26, 43, 0.82);
   border-bottom-color: var(--line-soft);
 }
 
@@ -1491,7 +1493,7 @@ button.thanks:disabled { background: transparent; }
 [data-theme="dark"] .pill {
   background: var(--brand-weak);
   border: 1px solid var(--brand-line);
-  color: #9ccdb2;
+  color: #9cc3d8;
 }
 
 [data-theme="dark"] .nav__add {
@@ -1682,11 +1684,11 @@ button.thanks:disabled { background: transparent; }
 
 /* ---------- 按钮 ---------- */
 
-/* 夜间品牌色被提亮成了浅绿，主按钮的文字必须反过来用深色，否则白字压浅绿看不清 */
+/* 夜间品牌色被提亮成了浅蓝，主按钮的文字必须反过来用深色，否则白字压浅蓝看不清 */
 [data-theme="dark"] .btn--primary {
   background: var(--brand);
   border-color: var(--brand);
-  color: #0b1410;
+  color: #0b1220;
 }
 
 [data-theme="dark"] .btn--ghost {
@@ -1707,7 +1709,7 @@ button.thanks:disabled { background: transparent; }
 }
 
 [data-theme="dark"] .path:not(:disabled):hover {
-  background: #1a241e;
+  background: #1a2637;
   border-color: var(--brand-line);
 }
 
@@ -1722,12 +1724,12 @@ button.thanks:disabled { background: transparent; }
 
 /* 置灰卡在暗底上会连边框一起消失，opacity 收到 .62 就够，再低就成了空白 */
 [data-theme="dark"] .path:disabled {
-  background: #131a16;
-  border-color: #1e2823;
+  background: #14202f;
+  border-color: #1e2a3c;
   opacity: 0.62;
 }
 
-[data-theme="dark"] .path:disabled:hover { border-color: #1e2823; }
+[data-theme="dark"] .path:disabled:hover { border-color: #1e2a3c; }
 
 [data-theme="dark"] .path__flag {
   color: var(--ink-3);
@@ -1746,12 +1748,12 @@ button.thanks:disabled { background: transparent; }
 
 [data-theme="dark"] .search__input:focus {
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(130, 184, 155, 0.16);
+  box-shadow: 0 0 0 3px rgba(130, 180, 214, 0.16);
 }
 
 /* 凹槽：底色比页面更深一档才像「槽」，选中项再抬起来 */
 [data-theme="dark"] .tabs {
-  background: #0a0f0c;
+  background: #0b1220;
   border: 1px solid var(--line);
 }
 
@@ -1771,7 +1773,7 @@ button.thanks:disabled { background: transparent; }
 }
 
 [data-theme="dark"] .story:not(:disabled):hover {
-  background: #1a241e;
+  background: #1a2637;
   border-color: var(--brand-line);
   box-shadow: var(--shadow-md);
 }
@@ -1786,8 +1788,8 @@ button.thanks:disabled { background: transparent; }
 }
 
 [data-theme="dark"] .tag--resolved {
-  background: rgba(130, 184, 155, 0.16);
-  color: #9ccdb2;
+  background: rgba(130, 180, 214, 0.16);
+  color: #9cc3d8;
 }
 
 [data-theme="dark"] .tag--plain {
@@ -1806,7 +1808,7 @@ button.thanks:disabled { background: transparent; }
 /* ---------- 提示条 ---------- */
 
 [data-theme="dark"] .banner {
-  background: rgba(130, 184, 155, 0.08);
+  background: rgba(130, 180, 214, 0.08);
   border-left-color: var(--brand-line);
   color: var(--ink-2);
 }
@@ -1833,12 +1835,12 @@ button.thanks:disabled { background: transparent; }
 [data-theme="dark"] .empty__title { color: var(--brand-ink); }
 
 [data-theme="dark"] .skeleton {
-  background: linear-gradient(90deg, #1b2420 25%, #222e28 50%, #1b2420 75%);
+  background: linear-gradient(90deg, #1b2638 25%, #223046 50%, #1b2638 75%);
   background-size: 200% 100%;
 }
 
 [data-theme="dark"] .skel__line {
-  background: linear-gradient(90deg, var(--line-soft) 25%, #202b25 50%, var(--line-soft) 75%);
+  background: linear-gradient(90deg, var(--line-soft) 25%, #202e44 50%, var(--line-soft) 75%);
   background-size: 200% 100%;
 }
 
@@ -1851,7 +1853,7 @@ button.thanks:disabled { background: transparent; }
    ============================================================ */
 
 [data-theme="dark"] .gate-body {
-  background: #0d1310;
+  background: #0d1522;
 }
 
 [data-theme="dark"] .gate {
@@ -1860,14 +1862,14 @@ button.thanks:disabled { background: transparent; }
 }
 
 [data-theme="dark"] .gate__input {
-  background: #121917;
+  background: #121c2c;
   border-color: var(--line);
   color: var(--ink);
 }
 
 [data-theme="dark"] .gate__input:focus {
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(130, 184, 155, 0.16);
+  box-shadow: 0 0 0 3px rgba(130, 180, 214, 0.16);
 }
 
 /* ============================================================
@@ -1892,7 +1894,7 @@ button.thanks:disabled { background: transparent; }
 
 [data-theme="dark"] .field__input:focus {
   border-color: var(--brand-line);
-  box-shadow: 0 0 0 3px rgba(130, 184, 155, 0.14);
+  box-shadow: 0 0 0 3px rgba(130, 180, 214, 0.14);
 }
 
 [data-theme="dark"] .field__fixed {

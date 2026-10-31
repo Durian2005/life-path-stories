@@ -6,9 +6,9 @@
 <!-- 受控预览：不让搜索引擎收录（PRD F0） -->
 <meta name="robots" content="noindex, nofollow">
 <title>人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261031v">
+<link rel="stylesheet" href="assets/style.css?v=20261031w">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261031v"></script>
+<script src="assets/theme.js?v=20261031w"></script>
 </head>
 <body>
 
@@ -182,9 +182,9 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="assets/cloud-config.js?v=20261031v"></script>
-<script src="assets/api.js?v=20261031v"></script>
-<script src="assets/boot.js?v=20261031v"></script>
+<script src="assets/cloud-config.js?v=20261031w"></script>
+<script src="assets/api.js?v=20261031w"></script>
+<script src="assets/boot.js?v=20261031w"></script>
 <script>
 /* ---------- 夜空星星 ----------
    放在最前面：它不依赖 Renlu，万一 SDK 没加载也不会跟着失效。
@@ -348,11 +348,24 @@ function renderPaths(counts = {}, openSet = null) {
         renderPaths(counts, openSet);
         syncTitle();
         load();
+        jumpToStories();
       });
     }
 
     elPaths.appendChild(btn);
   });
+}
+
+/* 点主题卡后滑到故事列表。和区块标题同一套思路：微信内置浏览器里
+   scrollIntoView({behavior:'smooth'}) 支持不全，JS 滚动在脚本没绑上时也无声无息，
+   所以用原生 hash 导航，平滑感交给 html { scroll-behavior: smooth }。
+   hash 已经是 #stories 时再赋值不会触发导航，先 replaceState 清掉再赋值，
+   保证每次点击都会滑下去。 */
+function jumpToStories() {
+  if (location.hash === '#stories') {
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  location.hash = 'stories';
 }
 
 function syncTitle() {
