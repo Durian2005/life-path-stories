@@ -6,9 +6,9 @@
 <!-- 受控预览：不让搜索引擎收录（PRD F0） -->
 <meta name="robots" content="noindex, nofollow">
 <title>人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261031n">
+<link rel="stylesheet" href="assets/style.css?v=20261031v">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261031n"></script>
+<script src="assets/theme.js?v=20261031v"></script>
 </head>
 <body>
 
@@ -49,22 +49,11 @@
 <header class="hero">
   <img class="hero__img" src="assets/hero.jpg" alt="">
 
-  <!-- 夜景四层：白天 display:none，完全不参与布局；夜间才铺在图上（样式在 style.css 末尾） -->
+  <!-- 夜景三层：白天 display:none，完全不参与布局；夜间才铺在图上（样式在 style.css 末尾）
+       星星由页面末尾的脚本按视口宽度生成，落在夜空带里，越靠近山脊越淡 -->
   <div class="hero__sky"></div>
   <div class="hero__moonlight"></div>
-  <div class="hero__stars"></div>
-  <span class="hero__moon" aria-hidden="true">
-    <i></i>
-    <svg viewBox="0 0 64 64">
-      <defs>
-        <mask id="moonMask">
-          <rect width="64" height="64" fill="#fff"/>
-          <circle cx="45" cy="23" r="25" fill="#000"/>
-        </mask>
-      </defs>
-      <circle cx="31" cy="33" r="25" fill="#fbf6e0" mask="url(#moonMask)"/>
-    </svg>
-  </span>
+  <div class="hero__stars" aria-hidden="true"></div>
 
   <div class="wrap">
     <div class="hero__inner">
@@ -193,10 +182,75 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="assets/cloud-config.js?v=20261031n"></script>
-<script src="assets/api.js?v=20261031n"></script>
-<script src="assets/boot.js?v=20261031n"></script>
+<script src="assets/cloud-config.js?v=20261031v"></script>
+<script src="assets/api.js?v=20261031v"></script>
+<script src="assets/boot.js?v=20261031v"></script>
 <script>
+/* ---------- 夜空星星 ----------
+   放在最前面：它不依赖 Renlu，万一 SDK 没加载也不会跟着失效。
+   为什么用脚本而不是写好一串 CSS：数量要跟视口走（窄屏夜空带只有 60 多像素高），
+   而且星团位置、亮度、呼吸节奏都得各自随机，写死就不会有真实感。
+   分布思路：夜空带只取容器上部 30%（再往下就是山脊），
+   「均匀 + 星团」混合，纯随机会均匀得像撒盐；越靠近山脊越淡，模拟大气消光。 */
+(function buildStars() {
+  var host = document.querySelector('.hero__stars');
+  if (!host) return;
+  var narrow = window.matchMedia('(max-width: 680px)').matches;
+  var TOTAL = narrow ? 26 : 150;
+  var CLUSTERS = narrow ? 2 : 3;
+  var MAX_Y = narrow ? 40 : 44;
+
+  var centers = [];
+  for (var c = 0; c < CLUSTERS; c++) {
+    centers.push({ x: 15 + Math.random() * 70, y: 4 + Math.random() * 14, r: 7 + Math.random() * 9 });
+  }
+
+  var frag = document.createDocumentFragment();
+  for (var i = 0; i < TOTAL; i++) {
+    var x, y;
+    if (i % 4 < 1) {                       // 四分之一落在星团里，其余均匀铺满
+      var cc = centers[i % CLUSTERS];
+      var a = Math.random() * Math.PI * 2;
+      var d = Math.abs((Math.random() + Math.random() + Math.random() - 1.5) / 1.5) * cc.r;
+      x = cc.x + Math.cos(a) * d;
+      y = cc.y + Math.sin(a) * d * 0.7;
+    } else {                               // 其余均匀撒开，留出空区
+      x = Math.random() * 100;
+      y = Math.random() * MAX_Y;
+    }
+    x = Math.max(1, Math.min(99, x));
+    y = Math.max(1, Math.min(MAX_Y, y));
+
+    var big = Math.random();
+    var core = big > 0.9 ? 2.4 : big > 0.7 ? 1.8 : big > 0.35 ? 1.3 : 0.9;
+    var size = core * 2.8;                 // 柔边把核心包住，看上去就是 core 那么大
+
+    var fade = 1 - (y / MAX_Y) * 0.2;      // 轻微消光，主要靠天空层的渐隐遮罩收尾
+    var o = (0.55 + Math.random() * 0.45) * fade;
+
+    var s = document.createElement('i');
+    s.style.left = x + '%';
+    s.style.top = y + '%';
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
+    s.style.marginLeft = (-size / 2) + 'px';
+    s.style.marginTop = (-size / 2) + 'px';
+    s.style.setProperty('--o', o.toFixed(2));
+    if (big > 0.88) s.setAttribute('data-glow', '');
+
+    if (Math.random() < 0.34) {            // 约三分之一会呼吸，周期与相位各自随机
+      s.setAttribute('data-breathe', '');
+      s.style.setProperty('--dur', (3.5 + Math.random() * 3.5).toFixed(1) + 's');
+      s.style.setProperty('--delay', (-Math.random() * 7).toFixed(1) + 's');
+    }
+    if (Math.random() < 0.2) {             // 少量偏暖的星，真实星空的色温并不统一
+      s.style.background = 'radial-gradient(circle, rgba(255,252,240,.98) 0%, rgba(255,244,214,.6) 34%, rgba(255,240,200,0) 72%)';
+    }
+    frag.appendChild(s);
+  }
+  host.appendChild(frag);
+})();
+
 const { api, ApiError, cloudReady } = window.Renlu;
 
 /* 开放主题（PRD RS-1：V1 开 5 个）。改这里要同步 app_config.topic_open */

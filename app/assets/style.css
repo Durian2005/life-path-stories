@@ -152,7 +152,7 @@ button { font-family: inherit; }
   min-height: 460px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;  /* 文字留在原来的高度：居中会让最后一行说明落到灌木上，看不清 */
+  justify-content: center;      /* 文字在左侧留白里垂直居中，把这块空间用满 */
   align-items: flex-start;      /* 不加这句，按钮会被 flex 拉伸成整行 */
 }
 
@@ -1512,13 +1512,12 @@ button.thanks:disabled { background: transparent; }
      ④ 星点与月牙：月亮落在原图左侧那片空白天空里
    ============================================================ */
 
-/* 四个装饰层的基础规则必须写在这里，不能写进 [data-theme="dark"]。
-   否则切回白天时 position:absolute 失效，月亮变回普通 span 参与文档流，
-   把 hero 撑高 74px，object-fit:cover 跟着放大整张图。 */
+/* 装饰层的基础规则必须写在这里，不能写进 [data-theme="dark"]。
+   否则切回白天时 position:absolute 失效，装饰层变回普通元素参与文档流，
+   把 hero 撑高、object-fit:cover 跟着放大整张图（月亮那版踩过一次）。 */
 .hero__sky,
 .hero__moonlight,
-.hero__stars,
-.hero__moon {
+.hero__stars {
   display: none;
   position: absolute;
   pointer-events: none;
@@ -1539,28 +1538,27 @@ button.thanks:disabled { background: transparent; }
 }
 
 /* ② 夜空：上重下轻 */
+/* 夜空：插画取景下移后，天空只占容器上部三成左右，
+   渐变断点必须跟着收（原来照 300px 高写的 58%，现在会一路压到山坡上）。
+   过渡区间拉到 16%（30% → 46%），让它从远山脊慢慢暗下去，
+   而不是在一条线上突然变黑。 */
 [data-theme="dark"] .hero__sky {
   display: block;
   z-index: 1;
   background: linear-gradient(180deg,
-    rgba(7, 13, 26, 0.95) 0%,
-    rgba(9, 17, 32, 0.86) 20%,
-    rgba(11, 21, 35, 0.56) 40%,
-    rgba(12, 22, 30, 0.16) 58%,
-    rgba(10, 16, 18, 0.08) 76%,
-    rgba(6, 11, 12, 0.4) 100%);
+    rgba(5, 10, 21, 0.96) 0%,
+    rgba(6, 13, 27, 0.92) 12%,
+    rgba(8, 16, 30, 0.80) 22%,
+    rgba(9, 18, 29, 0.55) 30%,
+    rgba(9, 17, 24, 0.22) 38%,
+    rgba(8, 14, 19, 0.06) 46%,
+    rgba(6, 11, 12, 0.3) 100%);
 }
 
 /* ③ 月光带：光源在右上方，落一片冷白在右坡上 */
-[data-theme="dark"] .hero__moonlight {
-  display: block;
-  z-index: 2;
-  mix-blend-mode: screen;
-  background: radial-gradient(ellipse 48% 64% at 71% 28%,
-    rgba(228, 240, 226, 0.17) 0%,
-    rgba(198, 220, 208, 0.07) 36%,
-    transparent 66%);
-}
+/* 没有月亮之后，右上方那团冷白光失去了光源，留着会像「天上有个看不见的灯」。
+   夜晚的亮度层次改由夜空渐变和星星自己完成。 */
+[data-theme="dark"] .hero__moonlight { display: none; }
 
 /* 暗角：把四角压下去，视线收拢到中间那条路 */
 [data-theme="dark"] .hero::after {
@@ -1591,33 +1589,70 @@ button.thanks:disabled { background: transparent; }
     radial-gradient(1.3px 1.3px at 96% 8%,  rgba(255, 255, 255, 0.52), transparent);
 }
 
-/* 月牙：一个大圆被另一个圆挖掉（SVG mask）。
-   内弧的位置靠 mask 里的 circle 控制，不要用 CSS 去减半径——算错会画出空形状。
-   光晕用 <i> 的径向渐变，不能用 drop-shadow：那会沿 SVG 边界留一圈方框。 */
-[data-theme="dark"] .hero__moon {
+/* ---------- 夜空星星 ----------
+   星星由 index.html 末尾的脚本按视口宽度生成，这里只定骨架与动画。
+   数量思路：夜空带只有容器上部 30% 多一点，星星再密就成了一片噪点。 */
+[data-theme="dark"] .hero__stars {
   display: block;
   z-index: 3;
-  left: 62%;
-  top: 9%;
-  width: 74px;
-  height: 74px;
+  overflow: hidden;
+  /* 星星不是到某条线就没了 —— 用一个上实下虚的遮罩让它们往远山脊里淡出，
+     这比逐颗调透明度柔和得多，也是「星空融进主图」的关键一层。 */
+  -webkit-mask-image: linear-gradient(180deg,
+    #000 0%, #000 20%, rgba(0, 0, 0, 0.5) 31%, transparent 43%);
+  mask-image: linear-gradient(180deg,
+    #000 0%, #000 20%, rgba(0, 0, 0, 0.5) 31%, transparent 43%);
 }
 
-[data-theme="dark"] .hero__moon svg { display: block; width: 100%; height: 100%; }
-
-[data-theme="dark"] .hero__moon i {
+/* 极淡的一条银河，斜着压在山脊上方的天空里。
+   没有它，一堆孤立的白点会显得像撒上去的盐，跟插画贴不到一起。 */
+[data-theme="dark"] .hero__stars::before {
+  content: "";
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 330%;
-  height: 330%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
+  left: -12%;
+  right: -12%;
+  top: 2%;
+  height: 30%;
+  transform: rotate(-5deg);
+  background: radial-gradient(ellipse 58% 52% at 56% 46%,
+    rgba(198, 220, 255, 0.11) 0%,
+    rgba(186, 210, 250, 0.05) 46%,
+    transparent 74%);
   pointer-events: none;
+}
+
+/* 每颗星用径向渐变做柔边，而不是一个实心圆点 ——
+   实心点边缘锐利，一眼就看得出是网页元素，融不进画面。 */
+.hero__stars i {
+  position: absolute;
+  border-radius: 50%;
   background: radial-gradient(circle,
-    rgba(255, 250, 226, 0.34) 0%,
-    rgba(255, 248, 218, 0.12) 32%,
-    transparent 66%);
+    rgba(255, 255, 255, 1) 0%,
+    rgba(244, 250, 255, 0.85) 22%,
+    rgba(214, 234, 255, 0.28) 52%,
+    rgba(200, 224, 255, 0) 78%);
+  opacity: var(--o, 0.7);
+}
+
+/* 最亮的几颗再带一圈光，投影仪上不至于消失成一个像素点 */
+.hero__stars i[data-glow] {
+  box-shadow: 0 0 6px 1px rgba(206, 228, 255, 0.28);
+}
+
+/* 呼吸：只动 opacity，走合成层不触发重排。
+   周期与延时由脚本随机写入，所以每颗星的节奏都不一样，不是整片一起闪。 */
+@keyframes star-breathe {
+  0%, 100% { opacity: var(--o, 0.7); }
+  45%      { opacity: calc(var(--o, 0.7) * 0.18); }
+}
+
+.hero__stars i[data-breathe] {
+  animation: star-breathe var(--dur, 5s) ease-in-out var(--delay, 0s) infinite;
+}
+
+/* 系统开了「减少动态效果」就不闪：这类纯装饰动画应当让位 */
+@media (prefers-reduced-motion: reduce) {
+  .hero__stars i[data-breathe] { animation: none; }
 }
 
 /* 文字层要压在夜空与暗角之上 */
@@ -2044,13 +2079,28 @@ a.section__head--jump { color: inherit; text-decoration: none; }
 /* ---------- 窄屏微调 ---------- */
 
 @media (max-width: 680px) {
-  /* 只挪月亮。插画、山脊、人物、月光带的光晕一律不动 ——
-     光晕一跟着动，整幅画的明暗结构就偏了，看着像背景被搬走。 */
-  [data-theme="dark"] .hero__moon {
-    left: 15%;
-    top: 7%;
-    width: 58px;
-    height: 58px;
+  /* 手机上插画只有 200px 高，夜空和星星必须收在插画范围内：
+     一是别铺到下面的文字区，二是别把画面上半部糊成一片黑、盖过主图。
+     断点整体压缩，星星 30% 就淡完，山脊以下一粒都没有。 */
+  [data-theme="dark"] .hero__sky,
+  [data-theme="dark"] .hero__stars {
+    bottom: auto;
+    height: 200px;
+  }
+  [data-theme="dark"] .hero__sky {
+    background: linear-gradient(180deg,
+      rgba(5, 10, 21, 0.9) 0%,
+      rgba(7, 14, 27, 0.75) 14%,
+      rgba(8, 16, 28, 0.46) 24%,
+      rgba(9, 17, 24, 0.14) 34%,
+      rgba(8, 14, 19, 0.03) 46%,
+      transparent 100%);
+  }
+  [data-theme="dark"] .hero__stars {
+    -webkit-mask-image: linear-gradient(180deg,
+      #000 0%, #000 5%, rgba(0, 0, 0, 0.45) 17%, transparent 29%);
+    mask-image: linear-gradient(180deg,
+      #000 0%, #000 5%, rgba(0, 0, 0, 0.45) 17%, transparent 29%);
   }
 
   /* 顶栏在窄屏要装下品牌 + 探索版 + 切换 + 加号，切换按钮再收一档 */
