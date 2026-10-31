@@ -2029,12 +2029,20 @@ button.thanks:disabled { background: transparent; }
 
 @media (max-width: 680px) {
   /* 手机上插画只有 200px 高，74px 的月亮会盖住太多画面，
-     收到 58px 并挪到偏左一些，落在原图那颗太阳的位置附近 */
+     收到 58px 并往左挪：贴着右边缘时它悬在山坡外侧，看着像贴纸 */
   [data-theme="dark"] .hero__moon {
-    left: 60%;
+    left: 54%;
     top: 8%;
     width: 58px;
     height: 58px;
+  }
+
+  /* 月光跟着月牙一起左移，否则光晕留在右边、和月亮分家 */
+  [data-theme="dark"] .hero__moonlight {
+    background: radial-gradient(ellipse 46% 62% at 60% 30%,
+      rgba(228, 240, 226, 0.17) 0%,
+      rgba(198, 220, 208, 0.07) 36%,
+      transparent 66%);
   }
 
   /* 顶栏在窄屏要装下品牌 + 探索版 + 切换 + 加号，切换按钮再收一档 */
