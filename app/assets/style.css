@@ -2030,21 +2030,13 @@ a.section__head--jump { color: inherit; text-decoration: none; }
 /* ---------- 窄屏微调 ---------- */
 
 @media (max-width: 680px) {
-  /* 手机上插画只有 200px 高。原图的太阳在右上角（约 86%），
-     月亮放那儿会贴边；改放左侧那片空旷天空，和右侧的人物形成对角。 */
+  /* 只挪月亮。插画、山脊、人物、月光带的光晕一律不动 ——
+     光晕一跟着动，整幅画的明暗结构就偏了，看着像背景被搬走。 */
   [data-theme="dark"] .hero__moon {
-    left: 42%;
-    top: 10%;
+    left: 15%;
+    top: 7%;
     width: 58px;
     height: 58px;
-  }
-
-  /* 月光跟着月牙一起左移，否则光晕留在右边、和月亮分家 */
-  [data-theme="dark"] .hero__moonlight {
-    background: radial-gradient(ellipse 46% 62% at 47% 32%,
-      rgba(228, 240, 226, 0.17) 0%,
-      rgba(198, 220, 208, 0.07) 36%,
-      transparent 66%);
   }
 
   /* 顶栏在窄屏要装下品牌 + 探索版 + 切换 + 加号，切换按钮再收一档 */
