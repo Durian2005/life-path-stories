@@ -2035,6 +2035,16 @@ button.thanks:disabled { background: transparent; }
   color: var(--ink-3);
 }
 
+/* 带口令的链接（路演扫码走这条）：输入框和「输入访问口令就能进去」一律不出现。
+   标记由 gate.html 里 <head> 的内联脚本在 HTML 解析时就打好，所以首帧即是加载态；
+   不能改成等 api.js 执行完再隐藏 —— 前面那个 CDN 的 SDK 是同步阻塞的，
+   手机上有几百毫秒到一两秒的空窗，输入框会先亮一下再消失，看起来像还要输口令。
+   校验失败时由 JS 摘掉 gate-silent 让表单回来，别只靠这里兜。 */
+.gate-silent .gate__desc,
+.gate-silent .gate__foot,
+.gate-silent .gate__form { display: none !important; }
+.gate-silent .gate__entering { display: block !important; }
+
 /* 窄屏主题卡改为两列：单列排 5 张要滚掉近一屏，故事列表被推得太远，
    而观众点开链接最想先看到的是「有人写了什么」 */
 @media (max-width: 680px) {
