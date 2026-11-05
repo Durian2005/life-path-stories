@@ -130,8 +130,12 @@ async function call(fn, params) {
 
 /**
  * 保证有可用 token。
- * 有 token → 直接返回；有 gate_ok → 静默换 token；
- * 都没有 → 抛 40301，由页面跳到门页。
+ * 有 token → 直接返回；没有 → 直接建号 / 取会话。
+ *
+ * V1.4 起不再有访问口令：服务端 api_session_init 只在 app_config.gate_pass_hash
+ * 非空时才校验 gate_ok，那边已经把 hash 清空了，这里也就不必先去门页换 gate_ok。
+ * 观众点开链接直接就是内容，不会看到输入框。
+ * 想恢复口令：把 hash 写回 app_config 即可，这条分支会自动重新要求过门。
  */
 async function ensureSession() {
   // 云端未接线时先报这个，否则会误报成「需要输口令」，把版式预览卡在门页
@@ -140,11 +144,8 @@ async function ensureSession() {
   }
   if (session.token) return session.token;
 
-  if (session.gateOk) {
-    const d = await api.sessionInit();
-    return d.token;
-  }
-  throw new ApiError(40301, '需要先输入访问口令');
+  const d = await api.sessionInit();
+  return d.token;
 }
 
 /* ------------------------------------------------------------
@@ -252,6 +253,57 @@ const api = {
   /* A-18 首页统计：N 位旅人 / M 个路标 / K 段已走完（V1.1，无需会话） */
   async stats() {
     return call('api_stats', {});
+  },
+
+  /* A-19 点赞 / 取消点赞（V1.3，toggle）。返回 { liked, like_count }。
+     作者会在首页铃铛里收到一条，但看不到是谁——接口也不返回操作者身份 */
+  async like(id) {
+    await ensureSession();
+    return call('api_story_like', { p_token: session.token, p_story_id: id });
+  },
+
+  /* A-20 收藏 / 取消收藏（V1.3，toggle）。返回 { favorited } */
+  async favorite(id) {
+    await ensureSession();
+    return call('api_story_favorite', { p_token: session.token, p_story_id: id });
+  },
+
+  /* A-21 记一次浏览（V1.3）。失败不影响正文阅读，页面自己吞掉异常 */
+  async view(id) {
+    await ensureSession();
+    return call('api_story_view', { p_token: session.token, p_story_id: id });
+  },
+
+  /* A-22 批量查点赞 / 收藏状态：ids → [{ story_id, like_count, liked, favorited }] */
+  async interactState(ids) {
+    await ensureSession();
+    return call('api_interaction_state', { p_token: session.token, p_story_ids: ids });
+  },
+
+  /* A-23 我的赞过 / 收藏 / 浏览记录。kind = 'like' | 'favorite' | 'view' */
+  async myMarks({ kind, page = 1, size = 10 }) {
+    await ensureSession();
+    return call('api_my_marks', {
+      p_token: session.token, p_kind: kind, p_page: page, p_size: size,
+    });
+  },
+
+  /* A-24 铃铛：未读数 + 最近通知。actor 拿到了也不许渲染，见页面注释 */
+  async notifications(limit = 20) {
+    await ensureSession();
+    return call('api_notifications', { p_token: session.token, p_limit: limit });
+  },
+
+  /* A-25 全部标为已读 */
+  async readNotifications() {
+    await ensureSession();
+    return call('api_notification_read', { p_token: session.token });
+  },
+
+  /* A-26 个人空间头部资料与统计 */
+  async me() {
+    await ensureSession();
+    return call('api_me', { p_token: session.token });
   },
 
   /* A-12 我的经历 */

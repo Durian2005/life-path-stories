@@ -11,7 +11,12 @@ window.RENLU_CONFIG = {
   oauthRelayBaseUrl: 'https://www.workbuddy.cn/v2/as/genie-baas/oauth',
   publishableKey: 'wbpk_gpfIqbE3k0eL0cFJb8lEx0_vJJnwHtAEpo1B5XHxoqVWH5d9Zw8pWuu',
 
-  // 路演期间只读：收起「去写一段」的入口，避免观众随手写的内容出现在列表里。
-  // 路演结束后改成 false 再发布一次即可恢复投稿。
-  readOnly: true,
+  // 投稿开关。路演期间曾经设为 true（收起「写一段」入口），
+  // V1.3 起恢复投稿：首页右上角的 + 直达写页。
+  readOnly: false,
+
+  // 客服邮箱：填了之后「社区规范 → 联系客服」会显示邮件入口与复制按钮；
+  // 留空则显示「路演现场直接找同学反馈」的兜底文案。
+  // 刻意不写死假地址 —— 换成你自己的邮箱再发布即可。
+  supportEmail: '',
 };

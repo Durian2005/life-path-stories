@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>一段路 · 人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261101e">
+<link rel="stylesheet" href="assets/style.css?v=20261105b">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261101e"></script>
+<script src="assets/theme.js?v=20261105b"></script>
 </head>
 <body>
 
@@ -112,16 +112,9 @@
 
       <div class="detail__foot">
         <div class="detail__acts">
-          <!-- V1.1 共鸣：同设备一次，语义是「我也走过这段」 -->
-          <button class="thanks" id="btnResonate" type="button">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M8.2 3.5c-1.5 0-2.4 1.2-2.4 2.8 0 2.2.9 3.1.9 4.6h3c0-1.5.9-2.4.9-4.6 0-1.6-.9-2.8-2.4-2.8z"/>
-              <path d="M15.8 9.5c-1.5 0-2.4 1.2-2.4 2.8 0 2.2.9 3.1.9 4.6h3c0-1.5.9-2.4.9-4.6 0-1.6-.9-2.8-2.4-2.8z"/>
-              <path d="M5.9 14.2h4.6M13.5 20.2h4.6"/>
-            </svg>
-            <span id="resonateText">…</span>
-          </button>
+          <!-- 共鸣与点赞在 V1.3 挪到了右下角固定区（见 .fab）：
+               读完一段时手还在往下滑，互动按钮要一直在手边，不能被滚走。
+               这里只留「致谢」和「海报」—— 致谢说的是「被帮到」，与点赞不是一回事 -->
           <button class="thanks" id="btnThanks" type="button">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -141,6 +134,37 @@
         <a class="detail__more" href="index.html">回到所有故事 →</a>
       </div>
     </article>
+
+    <!-- V1.3 右下角固定交互：脚印（我也走过这段）+ 点赞。
+         position: fixed，滚动时不动；每一篇详情页都在同一位置、同一尺寸。
+         竖排两个圆钮，数字是各自计数，点过之后高亮并可再点取消（点赞）。
+         示例内容整块隐藏：它能被看，但不参与任何计数。 -->
+    <div class="fab" id="fab" hidden>
+      <button class="fab__btn" id="fabFoot" type="button" aria-label="我也走过这段">
+        <svg class="fab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <!-- 线稿脚印：五个趾头 + 掌印。22px 下线条太细会糊，所以描边 1.6、
+               趾头半径都在 0.7 以上，宁可略粗也要认得出是脚印 -->
+          <circle cx="6.9" cy="7.6" r="1.05"/>
+          <circle cx="9.2" cy="5.2" r="1"/>
+          <circle cx="11.9" cy="4.5" r=".95"/>
+          <circle cx="14.5" cy="5.5" r=".88"/>
+          <circle cx="16.4" cy="7.6" r=".78"/>
+          <path d="M7.1 14.9c0-2.1.6-4.1 1.4-5.5.4-.7 1-1.1 1.7-1.1.8 0 1.3.5 1.7 1.4.6 1.3 1 3.2 1 5 0 2.6-1.2 4-3 4s-2.8-1.4-2.8-3.8z"/>
+        </svg>
+        <span class="fab__n" id="fabFootText">…</span>
+      </button>
+
+      <button class="fab__btn" id="fabLike" type="button" aria-label="点赞">
+        <svg class="fab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <!-- 简笔竖大拇指：与「致谢」的心形区分开，避免两个心挤在同一页 -->
+          <path d="M7 10.6v9"/>
+          <path d="M7 10.6h2.5l1.8-5c.3-.9 1-1.4 1.8-1.4 1.1 0 1.9.9 1.9 2v3.3h3.4c1.1 0 1.9 1 1.7 2l-.9 6.1c-.1.9-.9 1.6-1.8 1.6H7z"/>
+        </svg>
+        <span class="fab__n" id="fabLikeText">…</span>
+      </button>
+    </div>
 
     <!-- V1.1 海报层：canvas 画完长按保存，不动后端 -->
     <div id="posterLayer" hidden class="poster-layer">
@@ -183,10 +207,10 @@
 </main>
 
 <!-- SDK 本地托管（0.1.4-dev.ca27990.202610161713 / 2026-10-16 构建）：原来从 jsdelivr 取，单次要 1.9 秒，教室网络不通就整站白屏 -->
-<script src="assets/workbuddy-sdk.js?v=20261101e"></script>
-<script src="assets/cloud-config.js?v=20261101e"></script>
-<script src="assets/api.js?v=20261101e"></script>
-<script src="assets/boot.js?v=20261101e"></script>
+<script src="assets/workbuddy-sdk.js?v=20261105b"></script>
+<script src="assets/cloud-config.js?v=20261105b"></script>
+<script src="assets/api.js?v=20261105b"></script>
+<script src="assets/boot.js?v=20261105b"></script>
 <script>
 const { api, ApiError } = window.Renlu;
 
@@ -266,8 +290,8 @@ function render(d) {
     ? '这是你写的。等后来发生了什么，随时可以回来补上——不着急。'
     : '作者还没写后来。如果你正走在这段路上，可以先看看别人怎么走的。';
   syncThanks(d);   // 计数、已致谢状态、能不能点，都交给一个函数决定
-  currentDetail = d;          // V1.1 海报要用完整数据，先存下来
-  syncResonate(d);            // V1.1 共鸣：计数与「我是否点过」单独查一次
+  currentDetail = d;          // 海报要用完整数据，示例内容也要能生成
+  syncFab(d);                 // V1.3 右下角：脚印（共鸣）与点赞
 
   // 补写入口只给作者，且只在「还没走完」时给
   $('compose').hidden = !(d.is_author && d.status === 'open');
@@ -332,70 +356,113 @@ $('btnThanks').addEventListener('click', async () => {
   }
 });
 
-/* ---------- V1.1 共鸣：我也走过这段 ---------- */
+/* ---------- V1.3 右下角固定交互：脚印（共鸣）+ 点赞 ----------
+
+   为什么是 fixed：读完一段时手指往往已经滑到正文底部，互动按钮如果跟着走，
+   读者想起「我也走过」时还得往回找。固定住，位置永远一致。
+
+   两个按钮的可见性、可点性、计数文案全在 renderFab 里决定，
+   事件处理器只负责改 state 再调它一次，不各自维护一份显示逻辑。 */
 
 let currentDetail = null;
 let resonateState = { id: null, count: 0, done: false, can: false };
+let likeState = { id: null, count: 0, liked: false, can: false };
 
-function renderResonate() {
-  const n = resonateState.count;
-  $('resonateText').textContent = resonateState.done
-    ? `你也走过这段 · 共 ${n} 人`
-    : (n ? `${n} 人也走过这段` : '还没有人走过这段');
+function renderFab() {
+  const foot = $('fabFoot');
+  const like = $('fabLike');
+
+  $('fabFootText').textContent = resonateState.count;
+  foot.classList.toggle('fab__btn--on', resonateState.done);
+  foot.disabled = !resonateState.can || resonateState.done;
+  foot.title = resonateState.done
+    ? '你已经走过这段'
+    : (resonateState.can ? '我也走过这段' : '自己的路标不用打点');
+
+  $('fabLikeText').textContent = likeState.count;
+  like.classList.toggle('fab__btn--on', likeState.liked);
+  like.disabled = !likeState.can;
+  like.title = likeState.can
+    ? (likeState.liked ? '再点一下取消点赞' : '点个赞')
+    : '自己的路标不用点赞';
 }
 
-function syncResonate(d) {
-  resonateState = {
-    id: d.id,
-    count: 0,
-    done: false,
-    can: !(d.is_author || d.is_sample || d.status === 'hidden'),
-  };
-  const btn = $('btnResonate');
-  btn.hidden = Boolean(d.is_sample);       // 示例内容不可打点，直接不显示
-  btn.disabled = true;                     // 计数回来之前先不许点
-  $('resonateText').textContent = '…';
-  btn.title = d.is_author ? '自己的路标不需要打点' : '';
+/* 示例内容照样能看能生成海报，但不参与任何计数，整块按钮隐藏 */
+function syncFab(d) {
+  const usable = !d.is_sample && d.status !== 'hidden';
+  $('fab').hidden = !usable;
+  if (!usable) return;
+
+  resonateState = { id: d.id, count: '…', done: false, can: !d.is_author };
+  likeState = { id: d.id, count: '…', liked: false, can: !d.is_author };
+  renderFab();
+
+  // 两个查询并行：一个拿点赞/收藏，一个拿共鸣。谁先回来谁先填，互不等待。
+  api.interactState([d.id]).then((r) => {
+    const x = (r.items || []).find((i) => String(i.story_id) === String(d.id));
+    if (!x) return;
+    likeState.count = x.like_count || 0;
+    likeState.liked = Boolean(x.liked);
+    renderFab();
+  }).catch(() => { /* 计数拿不到就保持 …，不瞎报 0 */ });
+
   api.resonateState([d.id]).then((r) => {
     const x = (r.items || []).find((i) => String(i.story_id) === String(d.id));
     if (!x) return;
     resonateState.count = x.resonate_count || 0;
     resonateState.done = Boolean(x.resonated);
-    renderResonate();
-    btn.disabled = !resonateState.can || resonateState.done;
-    btn.classList.toggle('thanks--done', resonateState.done);
-  }).catch(() => {
-    // 状态拿不到就不展示这个按钮，避免一个 0 在那骗人
-    btn.hidden = true;
-  });
+    renderFab();
+  }).catch(() => { $('fabFoot').hidden = true; });
 }
 
-$('btnResonate').addEventListener('click', async () => {
+/* 点中时轻轻弹一下：这是全站唯一会「有回应」的动作，值得一点反馈 */
+function bump(el) {
+  el.classList.remove('fab__btn--pop');
+  void el.offsetWidth;                 // 强制重排，否则连点第二次动画不会重播
+  el.classList.add('fab__btn--pop');
+}
+
+$('fabFoot').addEventListener('click', async () => {
   if (!resonateState.can || resonateState.done) return;
-  const btn = $('btnResonate');
+  const btn = $('fabFoot');
   btn.disabled = true;
   try {
     const r = await api.resonate(resonateState.id);
     resonateState.count = r.resonate_count;
     resonateState.done = true;
-    renderResonate();
-    btn.classList.add('thanks--done');
+    renderFab();
+    bump(btn);
   } catch (e) {
     if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) { location.href = window.Renlu.gateUrl(); return; }
     if (e instanceof ApiError && e.code === 41001) {   // 已经打过点等边界
       resonateState.done = true;
-      renderResonate();
-      btn.classList.add('thanks--done');
+      renderFab();
       return;
     }
-    $('resonateText').textContent = '没能打上点，稍后再试';
+    btn.disabled = false;
+  }
+});
+
+$('fabLike').addEventListener('click', async () => {
+  if (!likeState.can) return;
+  const btn = $('fabLike');
+  btn.disabled = true;
+  try {
+    // 后端是 toggle：再点一下就是取消，计数自己会退回去
+    const r = await api.like(likeState.id);
+    likeState.liked = Boolean(r.liked);
+    likeState.count = r.like_count || 0;
+    renderFab();
+    if (r.liked) bump(btn);
+  } catch (e) {
+    if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) { location.href = window.Renlu.gateUrl(); return; }
     btn.disabled = false;
   }
 });
 
 /* ---------- V1.1 海报：canvas 画一张可长按保存的图 ---------- */
 
-const POSTER_QR = 'assets/qr-share.png?v=20261101e';
+const POSTER_QR = 'assets/qr-share.png?v=20261105b';
 const POSTER_FONT = '-apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
 
 /* 按像素宽折行；maxLines 折满后把最后一行截成「…」结尾。
@@ -682,6 +749,9 @@ async function load() {
   try {
     const d = await api.detail(storyId);
     render(d);
+    // V1.3 浏览记录：不 await、不报错。记不上只影响「我的-浏览记录」，
+    // 绝不能因为它让正文卡住或弹错
+    api.view(storyId).catch(() => {});
   } catch (e) {
     if (e instanceof ApiError) {
       if (e.isGateClosed || e.isAuthLost) { location.href = window.Renlu.gateUrl(); return; }

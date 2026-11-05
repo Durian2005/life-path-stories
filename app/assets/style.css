@@ -79,7 +79,11 @@ button { font-family: inherit; }
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--brand-ink);
+  white-space: nowrap;
 }
+
+/* 站点名分长短两版：首页右侧有四个元素，375 宽下长名字会被挤到换行 */
+.nav__brand-short { display: none; }
 
 .nav__brand svg { color: var(--brand); flex: none; }
 .nav__brand:hover { text-decoration: none; opacity: 0.82; }
@@ -2206,4 +2210,396 @@ a.story:hover .story__resonate { color: var(--brand); }
   text-align: left;
   -webkit-user-select: all;
   user-select: all;
+}
+
+/* ============================================================
+   V1.3 · 首页导航：铃铛、通知面板、我的
+   铃铛只承载「我的内容被点赞」一种事件。匿名是底线，
+   面板里不出现点赞者昵称与头像，样式上也不给头像位。
+   ============================================================ */
+
+.nav__bellwrap { position: relative; display: flex; }
+
+.nav__icon {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.nav__icon:hover,
+.nav__icon[aria-expanded="true"] { border-color: var(--brand-line); color: var(--brand); }
+
+/* 未读徽标：有数字就是未读数，超过 9 显示 9+ */
+.nav__dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.nav__dot[hidden] { display: none; }
+
+.nav__me { display: inline-flex; }
+.nav__ava {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brand-weak);
+  border: 1px solid var(--brand-line);
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 700;
+  transition: transform 0.15s ease;
+}
+.nav__me:hover .nav__ava { transform: scale(1.06); }
+
+/* 面板用绝对定位挂在铃铛下方、右对齐；max-width 防止窄屏顶出屏幕 */
+.notif {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -6px;
+  z-index: 40;
+  width: 300px;
+  max-width: calc(100vw - 28px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+.notif[hidden] { display: none; }
+
+.notif__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 14px 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.notif__title { font-size: 13px; font-weight: 700; color: var(--brand-ink); }
+.notif__hint { font-size: 10.5px; line-height: 1.5; color: var(--ink-3); text-align: right; }
+
+.notif__list { max-height: 320px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+.notif__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.notif__item:last-child { border-bottom: 0; }
+.notif__item:hover { background: var(--bg-soft); }
+.notif__item[data-unread] { background: var(--brand-weak); }
+
+.notif__icon { display: inline-flex; flex: none; margin-top: 3px; color: var(--accent); }
+.notif__body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.notif__text { font-size: 11.5px; color: var(--ink-2); }
+.notif__story {
+  font-weight: 600;
+  color: var(--brand-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notif__time { flex: none; margin-top: 2px; font-size: 10.5px; color: var(--ink-3); }
+
+.notif__empty {
+  margin: 0;
+  padding: 22px 16px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+/* ============================================================
+   V1.3 · 详情页右下角固定交互（脚印 / 点赞）
+   fixed 定位 + 竖排，滚动时不动；每篇详情页都在同一位置、同一尺寸。
+   数字做成角标而不是排在图标下面 —— 正圆按钮里塞两行会把图标压小。
+   ============================================================ */
+
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fab[hidden] { display: none; }
+
+.fab__btn {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  /* 固定层压在正文上，必须让人一眼看出它是「浮起来」的，
+     否则深色模式下按钮会和背景糊成一片 */
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  transition: transform 0.16s ease, color 0.16s ease,
+              border-color 0.16s ease, background 0.16s ease;
+}
+.fab__btn .fab__icon { width: 22px; height: 22px; }
+.fab__btn:hover:not(:disabled) { border-color: var(--brand-line); color: var(--brand); }
+.fab__btn:disabled { opacity: 0.55; cursor: default; }
+
+[data-theme="dark"] .fab__btn {
+  background: #1b2620;
+  border-color: #33443a;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+}
+
+.fab__n {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+/* 已点过：描边与计数同时转成强调色，一眼能看出「这里我留过痕迹」 */
+.fab__btn--on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.fab__btn--on .fab__n { background: var(--accent); }
+.fab__btn--on:disabled { opacity: 0.92; }
+
+@keyframes fabPop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+.fab__btn--pop { animation: fabPop 0.36s ease; }
+
+/* ============================================================
+   V1.3 · 个人空间（me.html）
+   ============================================================ */
+
+.profile {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 2px 0 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+
+.profile__ava {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--brand-weak);
+  border: 1px solid var(--brand-line);
+  color: var(--brand);
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.profile__main { flex: 1; min-width: 0; }
+.profile__name {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--brand-ink);
+  line-height: 1.3;
+}
+.profile__sub { margin: 0; font-size: 12px; line-height: 1.6; color: var(--ink-3); }
+
+.profile__stats {
+  width: 100%;
+  margin: 0;
+  padding: 13px 0 0;
+  display: flex;
+  gap: 24px;
+  border-top: 1px dashed var(--line-soft);
+}
+.pstat { display: flex; flex-direction: column; gap: 1px; }
+.pstat dt { font-size: 10.5px; letter-spacing: 0.04em; color: var(--ink-3); }
+.pstat dd {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--brand-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 四个 tab 在手机上放不下一整行，宁可横向滑动，也不把字号压到看不清 */
+.tabs--profile {
+  display: flex;
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 3px;
+  margin-bottom: 16px;
+}
+.tabs--profile::-webkit-scrollbar { display: none; }
+.tabs--profile .tabs__item { flex: none; padding: 7px 15px; }
+
+.settings {
+  margin-top: 32px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.settings__title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+
+.setrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 13px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.setrow:hover { border-color: var(--brand-line); }
+.setrow__label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.setrow__name { font-size: 13.5px; font-weight: 600; color: var(--brand-ink); }
+.setrow__desc { font-size: 11.5px; line-height: 1.6; color: var(--ink-3); }
+.setrow__chev { flex: none; font-size: 17px; color: var(--ink-3); }
+
+#identityBox { margin-top: 14px; }
+
+/* ============================================================
+   V1.3 · 社区规范 / 联系客服页
+   ============================================================ */
+
+.rules .block__body { font-size: 14.5px; }
+.rules__list { margin: 0; padding-left: 20px; }
+.rules__list li { margin-bottom: 12px; }
+.rules__list li:last-child { margin-bottom: 0; }
+.rules__list em { font-style: normal; color: var(--brand); }
+
+.support {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 14px 0 4px;
+  padding: 14px;
+  background: var(--brand-weak);
+  border: 1px solid var(--brand-line);
+  border-radius: var(--radius-sm);
+}
+.support[hidden] { display: none; }
+.support__line { margin: 0; font-size: 13px; color: var(--brand-ink); }
+.support__mail { font-weight: 700; text-decoration: underline; word-break: break-all; }
+
+.support__fallback {
+  margin: 14px 0 4px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--ink-2);
+  background: var(--bg-soft);
+  border-radius: var(--radius-sm);
+}
+.support__fallback[hidden] { display: none; }
+
+.rules__note {
+  margin-top: 16px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--ink-2);
+  background: var(--bg-soft);
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 680px) {
+  /* 导航右侧到 V1.3 变成 4 个元素（铃铛 / 头像 / 加号 + 主题），
+     430 宽下「探索版」那颗药丸是纯装饰，先让位，别把加号挤出去 */
+  .pill { display: none; }
+  .nav__right { gap: 8px; }
+
+  /* 拇指要够得着，但别挡住正文最后一行：抬高一点、往右收一点 */
+  .fab { right: 14px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); gap: 9px; }
+  .fab__btn { width: 44px; height: 44px; }
+  .fab__btn .fab__icon { width: 19px; height: 19px; }
+
+  .profile { gap: 13px; }
+  .profile__ava { width: 48px; height: 48px; font-size: 19px; }
+  .profile__name { font-size: 19px; }
+  .profile__stats { gap: 18px; }
+
+  /* 铃铛在导航最右侧，面板若继续用「相对铃铛右对齐 + 固定 300 宽」，
+     在 375 宽下左边缘会被推出屏幕。窄屏改成贴着视口的全宽浮层。 */
+  .notif {
+    position: fixed;
+    top: 58px;
+    left: 12px;
+    right: auto;
+    /* 显式给宽度：同时写 left/right 时在某些内核里会被基础样式的
+       width: 300px 顶掉，量出来只有 266 宽，右边空出一截 */
+    width: calc(100vw - 24px);
+    max-width: none;
+  }
+  .notif__hint { display: none; }
+  .notif__list { max-height: 60vh; }
+}
+
+/* 480 以下长站点名会被右侧四个元素挤到换行，换短名（导航保持一行） */
+@media (max-width: 480px) {
+  .nav__brand-full { display: none; }
+  .nav__brand-short { display: inline; }
 }

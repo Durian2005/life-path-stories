@@ -6,9 +6,9 @@
 <!-- 受控预览：不让搜索引擎收录（PRD F0） -->
 <meta name="robots" content="noindex, nofollow">
 <title>人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261101e">
+<link rel="stylesheet" href="assets/style.css?v=20261105b">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261101e"></script>
+<script src="assets/theme.js?v=20261105b"></script>
 </head>
 <body>
 
@@ -21,7 +21,10 @@
         <circle cx="5.5" cy="18.5" r="1.7" fill="currentColor" stroke="none"/>
         <circle cx="18.5" cy="5.5" r="1.7" fill="currentColor" stroke="none"/>
       </svg>
-      <span>人生的路你走到哪了</span>
+      <!-- 窄屏下站点名放不下（右侧到 V1.3 变成四个元素），换成短名。
+           断点见 style.css 的 .nav__brand-short -->
+      <span class="nav__brand-full">人生的路你走到哪了</span>
+      <span class="nav__brand-short" aria-hidden="true">人生的路</span>
       <span style="color:var(--ink-3)">.</span>
     </a>
 
@@ -41,6 +44,34 @@
           </svg>
         </span>
       </button>
+
+      <!-- V1.3 铃铛：只有「我的内容被点赞」才会亮。
+           匿名产品，面板里不出现点赞者昵称，也不提供任何反查入口 -->
+      <div class="nav__bellwrap">
+        <button class="nav__icon" id="btnBell" type="button"
+                aria-label="提醒" aria-expanded="false" aria-controls="notifPanel">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8.6a6 6 0 1 0-12 0c0 4.2-1.4 5.6-2 6.4h16c-.6-.8-2-2.2-2-6.4z"/>
+            <path d="M10 19a2 2 0 0 0 4 0"/>
+          </svg>
+          <span class="nav__dot" id="bellDot" hidden></span>
+        </button>
+
+        <div class="notif" id="notifPanel" hidden role="dialog" aria-label="提醒">
+          <div class="notif__head">
+            <span class="notif__title">提醒</span>
+            <span class="notif__hint" id="notifHint">有人为你的路标点赞时，会出现在这里</span>
+          </div>
+          <div class="notif__list" id="notifList"></div>
+        </div>
+      </div>
+
+      <!-- 我的：正常社交软件的个人主页入口，头像是昵称首字 -->
+      <a class="nav__me" href="me.html" aria-label="我的空间">
+        <span class="nav__ava" id="navAva">我</span>
+      </a>
+
       <a class="nav__add" href="write.html" aria-label="写一段我的经历">+</a>
     </div>
   </div>
@@ -172,7 +203,7 @@
 
     <div class="actions">
       <a class="btn btn--primary" href="write.html">写下我的这一段</a>
-      <a class="btn btn--ghost" href="me.html">我的经历</a>
+      <a class="btn btn--ghost" href="me.html">我的</a>
     </div>
 
     <footer class="foot">
@@ -184,10 +215,10 @@
 </main>
 
 <!-- SDK 本地托管（0.1.4-dev.ca27990.202610161713 / 2026-10-16 构建）：原来从 jsdelivr 取，单次要 1.9 秒，教室网络不通就整站白屏 -->
-<script src="assets/workbuddy-sdk.js?v=20261101e"></script>
-<script src="assets/cloud-config.js?v=20261101e"></script>
-<script src="assets/api.js?v=20261101e"></script>
-<script src="assets/boot.js?v=20261101e"></script>
+<script src="assets/workbuddy-sdk.js?v=20261105b"></script>
+<script src="assets/cloud-config.js?v=20261105b"></script>
+<script src="assets/api.js?v=20261105b"></script>
+<script src="assets/boot.js?v=20261105b"></script>
 <script>
 /* ---------- 夜空星星 ----------
    放在最前面：它不依赖 Renlu，万一 SDK 没加载也不会跟着失效。
@@ -757,11 +788,137 @@ $('keyword').addEventListener('input', (ev) => {
   }, 320);
 });
 
+/* ---------- V1.3 铃铛与「我的」 ----------
+   铃铛只做一件事：告诉作者「有人给你的内容点了赞」。
+   匿名是这个产品的底线，所以面板里只有「有人」和标题，没有昵称、没有头像，
+   服务端虽然返回了 actor 字段，这里刻意一次都不读。 */
+
+const elBell = $('btnBell');
+const elDot = $('bellDot');
+const elPanel = $('notifPanel');
+const elNotifList = $('notifList');
+
+const HEART_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+  + ' stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M12 20.4s-7.6-4.6-7.6-9.6a4.2 4.2 0 0 1 7.6-2.6 4.2 4.2 0 0 1 7.6 2.6c0 5-7.6 9.6-7.6 9.6z"/></svg>';
+
+function fmtRelative(iso) {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return '';
+  const diff = Date.now() - t;
+  if (diff < 60e3) return '刚刚';
+  if (diff < 3600e3) return Math.floor(diff / 60e3) + ' 分钟前';
+  if (diff < 86400e3) return Math.floor(diff / 3600e3) + ' 小时前';
+  if (diff < 7 * 86400e3) return Math.floor(diff / 86400e3) + ' 天前';
+  const d = new Date(iso);
+  return (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
+}
+
+function renderNotif(d) {
+  const items = (d && d.items) || [];
+  const unread = Number(d && d.unread) || 0;
+
+  elDot.hidden = unread <= 0;
+  elDot.textContent = unread > 9 ? '9+' : String(unread);
+
+  elNotifList.replaceChildren();
+  if (!items.length) {
+    const empty = document.createElement('p');
+    empty.className = 'notif__empty';
+    empty.textContent = '还没有人点赞。你的路标先留在这儿，会有人读到的。';
+    elNotifList.append(empty);
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  items.forEach((n) => {
+    // 链接必须带上当前 search（sharecode / k）：丢了静态资源就被 403，点开是白屏
+    const u = new URL(location.href);
+    u.searchParams.set('id', n.story_id);
+    const a = document.createElement('a');
+    a.className = 'notif__item';
+    if (!n.read) a.dataset.unread = '1';
+    a.href = 'story.html' + u.search;
+
+    const ic = document.createElement('span');
+    ic.className = 'notif__icon';
+    ic.innerHTML = HEART_SVG;
+
+    const body = document.createElement('span');
+    body.className = 'notif__body';
+    const text = document.createElement('span');
+    text.className = 'notif__text';
+    text.textContent = '有人给你的路标点了赞';
+    const title = document.createElement('span');
+    title.className = 'notif__story';
+    title.textContent = '《' + (n.story_title || '一段路') + '》';
+    body.append(text, title);
+
+    const time = document.createElement('time');
+    time.className = 'notif__time';
+    time.textContent = fmtRelative(n.created_at);
+
+    a.append(ic, body, time);
+    frag.append(a);
+  });
+  elNotifList.append(frag);
+}
+
+async function loadNotif() {
+  try {
+    renderNotif(await api.notifications(20));
+  } catch (e) {
+    if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) {
+      location.replace(window.Renlu.gateUrl());
+      return;
+    }
+    // 拿不到就保持铃铛安静 —— 它只是个提示器，不该为它在首页弹错误
+  }
+}
+
+async function loadHeader() {
+  try {
+    const d = await api.me();
+    const n = (d && d.nickname) || window.Renlu.getNickname() || '';
+    if (n) $('navAva').textContent = Array.from(n)[0];
+  } catch (e) { /* 头像保持首字「我」，不影响其它功能 */ }
+}
+
+function closeNotif() {
+  elPanel.hidden = true;
+  elBell.setAttribute('aria-expanded', 'false');
+}
+
+elBell.addEventListener('click', (ev) => {
+  ev.stopPropagation();
+  const open = elPanel.hidden;
+  elPanel.hidden = !open;
+  elBell.setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  // 打开即视为看过：红点立刻消失，条目留着，方便回头找是哪条被赞了。
+  // 不在这里重新拉一次列表 —— 那会把刚清掉的未读样式又刷回来。
+  elDot.hidden = true;
+  elNotifList.querySelectorAll('[data-unread]').forEach((n) => { delete n.dataset.unread; });
+  api.readNotifications().catch(() => { /* 失败就下次进入再标 */ });
+});
+
+document.addEventListener('click', (ev) => {
+  if (elPanel.hidden) return;
+  if (ev.target.closest('.nav__bellwrap')) return;
+  closeNotif();
+});
+
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape' && !elPanel.hidden) closeNotif();
+});
+
 syncTitle();
 renderPaths({});
 loadTopics();
 load();
 loadStats();
+loadHeader();
+loadNotif();
 
 if (!cloudReady()) console.info('[首页] 云端客户端未注入，当前为版式占位状态');
 </script>

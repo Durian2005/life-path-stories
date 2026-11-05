@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>我的经历 · 人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261101e">
+<title>我的 · 人生的路你走到哪了</title>
+<link rel="stylesheet" href="assets/style.css?v=20261105b">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261101e"></script>
+<script src="assets/theme.js?v=20261105b"></script>
 </head>
 <body>
 
@@ -38,6 +38,7 @@
           </svg>
         </span>
       </button>
+      <a class="nav__add" href="write.html" aria-label="写一段我的经历">+</a>
     </div>
   </div>
 </nav>
@@ -45,85 +46,134 @@
 <main class="write-main">
   <div class="wrap wrap--read">
 
-    <header class="write__head">
-      <h1 class="write__title">我的经历</h1>
-      <p class="write__sub" id="whoami">正在读取…</p>
-    </header>
-
     <!-- 只在「发布成功但详情页没跳过去」时出现，避免用户以为没发出去又发一遍（E7-3） -->
     <div class="banner banner--ok" id="doneBanner" hidden>
-      发布成功。刚写的那一条在下面的列表里。
+      发布成功。刚写的那一条在下面的「我写的」里。
     </div>
 
-    <!-- 身份：恢复码是换设备的唯一凭证 -->
-    <section class="idcard">
-      <div class="idcard__head">
-        <h2 class="idcard__title">换设备时用它找回</h2>
-        <span class="idcard__warn">只有这里能看到</span>
+    <!-- 个人空间头部：社交软件的个人主页形态，头像取昵称首字 -->
+    <header class="profile">
+      <div class="profile__ava" id="pAva" aria-hidden="true">我</div>
+
+      <div class="profile__main">
+        <h1 class="profile__name" id="pName">正在读取…</h1>
+        <p class="profile__sub" id="pSub">内容绑在这台浏览器上，不是账号</p>
       </div>
 
-      <p class="idcard__desc">
-        你的内容绑在这台浏览器上，不是账号。换手机、清缓存之后，用下面这串码就能把内容接回来。
-      </p>
+      <dl class="profile__stats" id="pStats">
+        <div class="pstat"><dt>路标</dt><dd id="statPosts">·</dd></div>
+        <div class="pstat"><dt>收到赞</dt><dd id="statLikes">·</dd></div>
+        <div class="pstat"><dt>被走过</dt><dd id="statRes">·</dd></div>
+        <div class="pstat"><dt>收藏</dt><dd id="statFav">·</dd></div>
+      </dl>
+    </header>
 
-      <div class="codebox">
-        <code class="codebox__code" id="codeText">•••• •••• ••••</code>
-        <button class="btn btn--ghost btn--sm" id="btnReveal" type="button">查看</button>
-        <button class="btn btn--ghost btn--sm" id="btnCopy" type="button" hidden>复制</button>
-        <button class="btn btn--ghost btn--sm btn--danger" id="btnReset" type="button" hidden>重置</button>
-      </div>
+    <!-- 四个 tab：我写的 / 赞过的 / 收藏 / 浏览记录 -->
+    <div class="tabs tabs--profile" role="tablist" aria-label="我的内容">
+      <button class="tabs__item" role="tab" aria-selected="true"  data-tab="posts">我写的</button>
+      <button class="tabs__item" role="tab" aria-selected="false" data-tab="like">赞过的</button>
+      <button class="tabs__item" role="tab" aria-selected="false" data-tab="favorite">收藏</button>
+      <button class="tabs__item" role="tab" aria-selected="false" data-tab="view">浏览记录</button>
+    </div>
 
-      <p class="idcard__hint" id="codeNote">
-        建议现在就存下来：截图、写在备忘录里，都行。
-      </p>
+    <p class="count" id="tabCount">正在加载…</p>
+    <div class="mine__list" id="tabList"></div>
 
-      <!-- 重置是危险操作，必须二次确认并原样告知后果 -->
-      <div class="danger" id="resetConfirm" hidden>
-        <p class="danger__text">
-          重置后旧码立即失效。<strong>新码只存在于这台设备上</strong>，
-          如果这台设备之后坏了、或者你清了浏览器数据，内容就再也找不回来了。
-        </p>
-        <div class="danger__foot">
-          <button class="btn btn--ghost btn--sm" id="btnResetCancel" type="button">先不重置</button>
-          <button class="btn btn--sm btn--danger" id="btnResetConfirm" type="button">确认重置</button>
-        </div>
-      </div>
+    <div class="listfoot" id="tabFoot" hidden>
+      <button class="btn btn--ghost btn--sm" id="btnTabMore" type="button">加载更多</button>
+      <p class="listfoot__text" id="tabFootText"></p>
+    </div>
 
-      <p class="idcard__err" id="codeErr"></p>
-    </section>
+    <!-- 设置区：把原先散落的身份相关功能收进来，另加规范与客服入口 -->
+    <section class="settings">
+      <h2 class="settings__title">设置</h2>
 
-    <!-- 认领：在别人的设备上用旧码接回自己的内容 -->
-    <section class="claim">
-      <button class="claim__toggle" id="btnClaimOpen" type="button" aria-expanded="false">
-        换了设备，用恢复码找回原来的内容
-        <span class="claim__chev">›</span>
+      <button class="setrow" id="btnIdentity" type="button" aria-expanded="false" aria-controls="identityBox">
+        <span class="setrow__label">
+          <span class="setrow__name">换设备时找回我的内容</span>
+          <span class="setrow__desc">用 12 位恢复码把内容接到新设备</span>
+        </span>
+        <span class="setrow__chev" aria-hidden="true">›</span>
       </button>
 
-      <form class="claim__body" id="claimForm" hidden>
-        <label class="field__label" for="claimCode">输入 12 位恢复码</label>
-        <input class="field__input field__input--code" id="claimCode" type="text"
-               inputmode="latin" autocomplete="off" maxlength="14" placeholder="XXXX-XXXX-XXXX">
-        <p class="field__hint">
-          找回后，这台设备会成为你的新设备，原来那台会自动退出。
-        </p>
-        <p class="field__err" id="claimErr"></p>
-        <div class="claim__foot">
-          <button class="btn btn--primary btn--sm" type="submit" id="btnClaim">找回我的内容</button>
-        </div>
-      </form>
+      <a class="setrow" href="rules.html">
+        <span class="setrow__label">
+          <span class="setrow__name">社区规范</span>
+          <span class="setrow__desc">这里能写什么、不能写什么</span>
+        </span>
+        <span class="setrow__chev" aria-hidden="true">›</span>
+      </a>
+
+      <a class="setrow" href="rules.html#support">
+        <span class="setrow__label">
+          <span class="setrow__name">联系客服</span>
+          <span class="setrow__desc">内容被误判、想删掉某一段、发现不合适的内容</span>
+        </span>
+        <span class="setrow__chev" aria-hidden="true">›</span>
+      </a>
     </section>
 
-    <!-- 我的内容 -->
-    <section class="mine">
-      <div class="mine__head">
-        <h2 class="mine__title">我写过的</h2>
-        <span class="mine__count" id="mineCount"></span>
-      </div>
-      <div class="mine__list" id="mineList"></div>
-      <div class="actions actions--tight">
-        <a class="btn btn--primary" href="write.html">再写一段</a>
-      </div>
-    </section>
+    <!-- 身份区（默认折叠）：原「我的经历」的身份卡与认领表单，逻辑一行没改 -->
+    <div id="identityBox" hidden>
+
+      <!-- 身份：恢复码是换设备的唯一凭证 -->
+      <section class="idcard">
+        <div class="idcard__head">
+          <h2 class="idcard__title">换设备时用它找回</h2>
+          <span class="idcard__warn">只有这里能看到</span>
+        </div>
+
+        <p class="idcard__desc">
+          你的内容绑在这台浏览器上，不是账号。换手机、清缓存之后，用下面这串码就能把内容接回来。
+        </p>
+
+        <div class="codebox">
+          <code class="codebox__code" id="codeText">•••• •••• ••••</code>
+          <button class="btn btn--ghost btn--sm" id="btnReveal" type="button">查看</button>
+          <button class="btn btn--ghost btn--sm" id="btnCopy" type="button" hidden>复制</button>
+          <button class="btn btn--ghost btn--sm btn--danger" id="btnReset" type="button" hidden>重置</button>
+        </div>
+
+        <p class="idcard__hint" id="codeNote">
+          建议现在就存下来：截图、写在备忘录里，都行。
+        </p>
+
+        <!-- 重置是危险操作，必须二次确认并原样告知后果 -->
+        <div class="danger" id="resetConfirm" hidden>
+          <p class="danger__text">
+            重置后旧码立即失效。<strong>新码只存在于这台设备上</strong>，
+            如果这台设备之后坏了、或者你清了浏览器数据，内容就再也找不回来了。
+          </p>
+          <div class="danger__foot">
+            <button class="btn btn--ghost btn--sm" id="btnResetCancel" type="button">先不重置</button>
+            <button class="btn btn--sm btn--danger" id="btnResetConfirm" type="button">确认重置</button>
+          </div>
+        </div>
+
+        <p class="idcard__err" id="codeErr"></p>
+      </section>
+
+      <!-- 认领：在别人的设备上用旧码接回自己的内容 -->
+      <section class="claim">
+        <button class="claim__toggle" id="btnClaimOpen" type="button" aria-expanded="false">
+          换了设备，用恢复码找回原来的内容
+          <span class="claim__chev">›</span>
+        </button>
+
+        <form class="claim__body" id="claimForm" hidden>
+          <label class="field__label" for="claimCode">输入 12 位恢复码</label>
+          <input class="field__input field__input--code" id="claimCode" type="text"
+                 inputmode="latin" autocomplete="off" maxlength="14" placeholder="XXXX-XXXX-XXXX">
+          <p class="field__hint">
+            找回后，这台设备会成为你的新设备，原来那台会自动退出。
+          </p>
+          <p class="field__err" id="claimErr"></p>
+          <div class="claim__foot">
+            <button class="btn btn--primary btn--sm" type="submit" id="btnClaim">找回我的内容</button>
+          </div>
+        </form>
+      </section>
+    </div>
 
     <footer class="foot">
       内容由参与者自愿分享，观点属作者个人。本站不提供心理或医疗建议；<br>
@@ -134,10 +184,10 @@
 </main>
 
 <!-- SDK 本地托管（0.1.4-dev.ca27990.202610161713 / 2026-10-16 构建）：原来从 jsdelivr 取，单次要 1.9 秒，教室网络不通就整站白屏 -->
-<script src="assets/workbuddy-sdk.js?v=20261101e"></script>
-<script src="assets/cloud-config.js?v=20261101e"></script>
-<script src="assets/api.js?v=20261101e"></script>
-<script src="assets/boot.js?v=20261101e"></script>
+<script src="assets/workbuddy-sdk.js?v=20261105b"></script>
+<script src="assets/cloud-config.js?v=20261105b"></script>
+<script src="assets/api.js?v=20261105b"></script>
+<script src="assets/boot.js?v=20261105b"></script>
 <script>
 const { api, ApiError } = window.Renlu;
 const $ = (id) => document.getElementById(id);
@@ -168,21 +218,60 @@ function handleErr(e, target) {
   target.textContent = (e && e.message) || '稍后再试';
 }
 
-/* ---------- 身份 ---------- */
+/* 详情页链接必须带上当前 search（sharecode / k），否则新浏览器打开静态资源是 403 */
+function storyHref(id) {
+  const u = new URL(location.href);
+  u.searchParams.delete('published');
+  u.searchParams.set('id', id);
+  return 'story.html' + u.search;
+}
+
+/* ---------- 头部资料 ---------- */
+
+async function loadProfile() {
+  try {
+    const d = await api.me();
+    const nick = d.nickname || window.Renlu.getNickname() || '我';
+    $('pAva').textContent = Array.from(nick)[0] || '我';
+    $('pName').textContent = nick;
+
+    const joined = fmtDate(d.joined_at);
+    $('pSub').textContent = joined
+      ? `${joined} 起在这条路上 · 内容只绑在这台设备上`
+      : '内容只绑在这台设备上';
+
+    const s = d.stats || {};
+    $('statPosts').textContent = Number(s.posts) || 0;
+    $('statLikes').textContent = Number(s.likes) || 0;
+    $('statRes').textContent = Number(s.resonates) || 0;
+    $('statFav').textContent = Number(s.favorites) || 0;
+  } catch (e) {
+    handleErr(e, $('pSub'));
+  }
+}
+
+/* ---------- 身份 / 恢复码（与 V1 完全一致） ---------- */
 
 async function loadIdentity() {
   try {
     const d = await api.recoveryCode();
     window.__code = d.recovery_code;
-    const nick = window.Renlu.getNickname();
-    $('whoami').textContent = nick
-      ? nick + ' · 下面是找回内容的唯一凭证'
-      : '这台设备上的身份，下面这串码是找回内容的唯一凭证。';
     if (revealed) $('codeText').textContent = fmtCode(d.recovery_code);
   } catch (e) {
     handleErr(e, $('codeErr'));
   }
 }
+
+$('btnIdentity').addEventListener('click', () => {
+  const box = $('identityBox');
+  const open = box.hidden;
+  box.hidden = !open;
+  $('btnIdentity').setAttribute('aria-expanded', String(open));
+  if (open) {
+    loadIdentity();
+    box.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+});
 
 $('btnReveal').addEventListener('click', async () => {
   $('codeErr').textContent = '';
@@ -260,7 +349,7 @@ $('claimForm').addEventListener('submit', async (e) => {
     const d = await api.claim(raw);
     $('claimErr').textContent = '';
     $('codeText').textContent = '正在接回内容…';
-    $('whoami').textContent = `已经把 ${d.moved} 条内容接回这台设备，正在刷新…`;
+    $('pSub').textContent = `已经把 ${d.moved} 条内容接回这台设备，正在刷新…`;
     setTimeout(() => location.replace('me.html'), 1200);
   } catch (ex) {
     // 40103 故意含糊：码不存在 / 已用过 / 格式错，三者同一提示
@@ -274,9 +363,18 @@ $('claimForm').addEventListener('submit', async (e) => {
   }
 });
 
-/* ---------- 我的内容 ---------- */
+/* ---------- 列表：四个 tab 共用一套加载与渲染 ---------- */
 
-function statusTag(status, visibility) {
+const TAB = {
+  posts:    { empty: '写下第一段，之后随时可以回来补「后来」。' },
+  like:     { empty: '你还没给谁点过赞。读到打动你的那一段，右下角点一下就好。' },
+  favorite: { empty: '还没有收藏。遇到想再读一遍的，详情页右下角可以先收着。' },
+  view:     { empty: '还没有浏览记录。你读过的路标会按时间留在这里。' },
+};
+
+const tabState = { name: 'posts', page: 0, hasMore: false, loading: false, seen: new Set(), total: 0 };
+
+function statusTag(status) {
   const map = {
     open: ['还没走完', 'tag--open'],
     resolved: ['走过这一段', 'tag--resolved'],
@@ -289,13 +387,14 @@ function statusTag(status, visibility) {
   return wrap;
 }
 
+/* 我写的：带状态、天数、编辑 / 删除 */
 function makeRow(s) {
   const row = document.createElement('div');
   row.className = 'row';
 
   const a = document.createElement('a');
   a.className = 'row__link';
-  a.href = `story.html?id=${encodeURIComponent(s.id)}`;
+  a.href = storyHref(s.id);
 
   const top = document.createElement('div');
   top.className = 'row__top';
@@ -329,6 +428,43 @@ function makeRow(s) {
 
   a.append(top, h, meta);
   row.append(a, makeOps(s, row));
+  return row;
+}
+
+/* 赞过 / 收藏 / 浏览：只读行，不提供作者才有的操作 */
+function makeMarkRow(s, kind) {
+  const row = document.createElement('div');
+  row.className = 'row';
+
+  const a = document.createElement('a');
+  a.className = 'row__link';
+  a.href = storyHref(s.id);
+
+  const top = document.createElement('div');
+  top.className = 'row__top';
+  top.append(statusTag(s.status));
+  if (s.is_sample) {
+    const t = document.createElement('span');
+    t.className = 'tag tag--plain';
+    t.textContent = '示例';
+    top.append(t);
+  }
+
+  const h = document.createElement('h3');
+  h.className = 'row__title';
+  h.textContent = s.title;
+
+  const meta = document.createElement('p');
+  meta.className = 'row__meta';
+  const verb = kind === 'like' ? '赞过' : kind === 'favorite' ? '收藏于' : '读过';
+  meta.textContent = [
+    s.author_nickname || '路过的人',
+    `${verb} ${fmtDate(s.marked_at)}`,
+    `${s.like_count || 0} 个赞`,
+  ].join(' · ');
+
+  a.append(top, h, meta);
+  row.append(a);
   return row;
 }
 
@@ -375,13 +511,13 @@ function makeOps(s, row) {
       try {
         await api.remove(s.id);
         row.remove();
-        const left = $('mineList').querySelectorAll('.row').length;
-        $('mineCount').textContent = left ? `共 ${left} 条` : '';
-        if (!left) loadMine();      // 删空了就切回空状态
+        tabState.total = Math.max(0, tabState.total - 1);
+        updateCount(tabState.name, tabState.total);
+        if (!tabState.total) loadTab(false);   // 删空了就切回空状态
       } catch (e) {
         disarm();
         del.disabled = false;
-        handleErr(e, $('whoami'));
+        handleErr(e, $('pSub'));
       }
     });
     ops.append(del);
@@ -391,34 +527,117 @@ function makeOps(s, row) {
   return ops;
 }
 
-async function loadMine() {
-  try {
-    const d = await api.myStories({ page: 1, size: 20 });
-    const items = d.items || [];
-    $('mineCount').textContent = items.length ? `共 ${d.total} 条` : '';
+function updateCount(name, total) {
+  $('tabCount').textContent = total ? `共 ${total} 条` : '';
+}
 
-    const list = $('mineList');
-    list.replaceChildren();
-    if (!items.length) {
-      const empty = document.createElement('div');
-      empty.className = 'empty';
-      const t = document.createElement('span');
-      t.className = 'empty__title';
-      t.textContent = '你还没写过';
-      empty.append(t, document.createTextNode('写下第一段，之后随时可以回来补「后来」。'));
-      list.append(empty);
-      return;
-    }
-    const frag = document.createDocumentFragment();
-    items.forEach((s) => frag.appendChild(makeRow(s)));
-    list.append(frag);
-  } catch (e) {
-    handleErr(e, $('whoami'));
+function renderEmpty(name) {
+  const box = document.createElement('div');
+  box.className = 'empty';
+  const t = document.createElement('span');
+  t.className = 'empty__title';
+  t.textContent = name === 'posts' ? '你还没写过' : '这里还是空的';
+  box.append(t, document.createTextNode(TAB[name].empty));
+  return box;
+}
+
+function renderFoot() {
+  const foot = $('tabFoot');
+  if (tabState.hasMore) {
+    foot.hidden = false;
+    $('btnTabMore').hidden = false;
+    $('btnTabMore').disabled = false;
+    $('btnTabMore').textContent = '加载更多';
+    $('tabFootText').textContent = '';
+  } else if (tabState.total) {
+    foot.hidden = false;
+    $('btnTabMore').hidden = true;
+    $('tabFootText').textContent = '没有更多了';
+  } else {
+    foot.hidden = true;
   }
 }
 
-loadIdentity();
-loadMine();
+async function loadTab(append = false) {
+  if (tabState.loading) return;
+  if (append && !tabState.hasMore) return;
+
+  const name = tabState.name;
+  tabState.loading = true;
+
+  if (!append) {
+    tabState.page = 0;
+    tabState.hasMore = false;
+    tabState.seen = new Set();
+    $('tabList').innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
+    $('tabCount').textContent = '正在加载…';
+    $('tabFoot').hidden = true;
+  } else {
+    $('btnTabMore').disabled = true;
+    $('btnTabMore').textContent = '正在加载…';
+  }
+
+  const wantPage = append ? tabState.page + 1 : 1;
+
+  try {
+    const r = name === 'posts'
+      ? await api.myStories({ page: wantPage, size: 20 })
+      : await api.myMarks({ kind: name, page: wantPage, size: 20 });
+
+    if (name !== tabState.name) return;        // 用户已切走，这次结果作废
+
+    const items = r.items || [];
+    tabState.page = r.page || wantPage;
+    tabState.total = Number(r.total) || 0;
+    tabState.hasMore = Boolean(r.has_more);
+
+    if (!append) $('tabList').replaceChildren();
+
+    if (!items.length && !append) {
+      $('tabList').append(renderEmpty(name));
+      $('tabCount').textContent = '';
+      renderFoot();
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    items.forEach((s) => {
+      const key = String(s.id);
+      if (tabState.seen.has(key)) return;
+      tabState.seen.add(key);
+      frag.append(name === 'posts' ? makeRow(s) : makeMarkRow(s, name));
+    });
+    $('tabList').append(frag);
+
+    updateCount(name, tabState.total);
+    renderFoot();
+  } catch (e) {
+    if (name !== tabState.name) return;
+    handleErr(e, $('tabCount'));
+  } finally {
+    tabState.loading = false;
+  }
+}
+
+document.querySelectorAll('.tabs--profile .tabs__item').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabs--profile .tabs__item')
+      .forEach((b) => b.setAttribute('aria-selected', 'false'));
+    btn.setAttribute('aria-selected', 'true');
+    tabState.name = btn.dataset.tab;
+    loadTab(false);
+  });
+});
+
+$('btnTabMore').addEventListener('click', () => loadTab(true));
+
+/* ---------- 启动 ---------- */
+
+loadProfile();
+loadTab(false);
+
+/* 身份卡折叠着也先把恢复码取回来：点开就能直接「查看」，少一次往返等待 */
+setTimeout(() => { if (!window.__code) loadIdentity(); }, 300);
 </script>
 </body>
 </html>
