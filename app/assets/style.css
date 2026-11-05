@@ -145,6 +145,11 @@ button { font-family: inherit; }
   object-position: 66% 72%;
 }
 
+/* 夜间专用主图：hero.jpg 的逐像素夜色版。白天整张不显示，由 [data-theme="dark"] 打开。
+   两张图共用 .hero__img 系列（尺寸、object-position、窄屏规则全部一致），
+   深色模式里绝不单独覆盖 object-position，否则切换主题时画面会错位。 */
+.hero__img--night { display: none; }
+
 .hero__inner {
   position: relative;
   z-index: 1;
@@ -1468,21 +1473,23 @@ button.thanks:disabled { background: transparent; }
 [data-theme="dark"] {
   /* 让原生控件跟着变暗：复选框、搜索框的清除键、滚动条、下拉面板 */
   color-scheme: dark;
-  background: #0f1512;
+  /* V1.6.3：夜景主图是深蓝调，底色跟着往夜蓝走，标题 / 正文也偏冷；
+     品牌绿仍留在强调色上，和画面里的草坡呼应，不整套换色。 */
+  background: #0d1420;
 
-  --bg:        #0f1512;
-  --bg-soft:   #131a16;
-  --surface:   #17201b;
-  --ink:       #e9efe9;
-  --ink-2:     #9fada4;
-  --ink-3:     #6f7d75;
-  --line:      #24302a;
-  --line-soft: #1c2620;
+  --bg:        #0d1420;
+  --bg-soft:   #111a28;
+  --surface:   #16202e;
+  --ink:       #e8eef7;
+  --ink-2:     #a2b0c4;
+  --ink-3:     #71809a;
+  --line:      #24334a;
+  --line-soft: #1b2738;
   /* 深绿 #315c4c 放在深底上等于没有，品牌色必须提亮 */
   --brand:     #82b89b;
   --brand-ink: #d3e7db;
-  --brand-weak:#182720;
-  --brand-line:#2c4738;
+  --brand-weak:#16261f;
+  --brand-line:#2b4538;
   --accent:    #d98070;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.34);
@@ -1492,7 +1499,7 @@ button.thanks:disabled { background: transparent; }
 /* ---------- 顶栏 ---------- */
 
 [data-theme="dark"] .nav {
-  background: rgba(15, 21, 18, 0.82);
+  background: rgba(13, 20, 32, 0.86);
   border-bottom-color: var(--line-soft);
 }
 
@@ -1690,6 +1697,103 @@ button.thanks:disabled { background: transparent; }
   color: #bfd2c6;
 }
 
+/* ============================================================
+   V1.6.4 夜间 = 白天那张图的「夜色版」，构图逐像素对齐
+   ------------------------------------------------------------
+   用户明确要求：深浅切换时只改变天空里的月亮 / 星星和整体色调，
+   山脉、人物、道路、白花、树的大小与位置一律不变。
+   所以 hero-night.jpg 不是另一张插画，而是由 hero.jpg 逐像素做
+   夜色映射得到的同一张图；两张图共用完全相同的 object-position，
+   切换时画面零位移。月亮与星点用叠加层画（底图右上角那颗橙色
+   太阳已在生成夜色图时擦掉），这样桌面和窄屏都能看见月亮。
+   ============================================================ */
+
+[data-theme="dark"] .hero { background: #0a1120; }
+
+/* 白天图退场、夜色版登场。不要在这里写 object-position：
+   一写就会和浅色取景错开，切主题时整幅画会「跳」一下。 */
+[data-theme="dark"] .hero__img {
+  display: none;
+  filter: none;
+}
+[data-theme="dark"] .hero__img--night { display: block; }
+
+/* 夜空只做很轻的上部加深，让星点有底、天空更沉；
+   半透明叠加只改变色调，不遮住远山与山脊轮廓。 */
+[data-theme="dark"] .hero__sky {
+  display: block;
+  z-index: 1;
+  background: linear-gradient(180deg,
+    rgba(4, 10, 28, 0.50) 0%,
+    rgba(5, 12, 30, 0.33) 16%,
+    rgba(6, 14, 32, 0.14) 32%,
+    transparent 52%);
+}
+
+/* 月亮：复用原来的 .hero__moonlight 节点，改成一轮满月 + 光晕。
+   位置按 hero 容器定位，与底图裁切无关，桌面 / 手机都能看到。
+   11-06 按参考图调整：加大光晕、往左挪不压人物；
+   00:48 再调：向左上移一些、缩小一档、整体调暗，
+   光晕三层压低透明度，让月亮融进夜色而不是浮在夜色上。 */
+[data-theme="dark"] .hero__moonlight {
+  display: block;
+  inset: auto;
+  right: 37%;
+  top: 5%;
+  z-index: 4;                 /* 压在星点层之上，星星不会浮到月亮脸上 */
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 66% 64%, rgba(140, 155, 148, 0.11) 0 11%, transparent 13%),
+    radial-gradient(circle at 39% 70%, rgba(140, 155, 148, 0.08) 0 8%, transparent 10%),
+    radial-gradient(circle at 36% 32%, #f8f5e6 0%, #efe9d3 44%, #dfe2cd 74%, #c9d3c3 100%);
+  box-shadow:
+    0 0 16px 5px rgba(234, 240, 255, 0.22),
+    0 0 52px 18px rgba(168, 198, 250, 0.11),
+    0 0 130px 52px rgba(120, 158, 228, 0.05);
+  opacity: 1;                 /* 11-06 00:55 用户要求：不透出背景夜空，必须完全不透明 */
+}
+
+/* 星点：脚本生成的 <i> 铺在上部天空，用遮罩往山脊方向淡出。
+   旧规则里那组写死的 background-image 星点会和脚本的重影，这里清掉。 */
+[data-theme="dark"] .hero__stars {
+  display: block;
+  z-index: 3;
+  overflow: hidden;
+  bottom: auto;
+  height: 38%;
+  background-image: none;
+  -webkit-mask-image: linear-gradient(180deg,
+    #000 0%, #000 34%, rgba(0, 0, 0, 0.45) 66%, transparent 92%);
+  mask-image: linear-gradient(180deg,
+    #000 0%, #000 34%, rgba(0, 0, 0, 0.45) 66%, transparent 92%);
+}
+
+/* 旧暗角会把右上角的月亮一起压黑。改成左侧轻微加深护住标题，
+   下缘留一条与文字区同色的过渡，让插画自然接进页面。 */
+[data-theme="dark"] .hero::after {
+  background:
+    linear-gradient(90deg, rgba(6, 12, 26, 0.52) 0%, rgba(6, 12, 26, 0.22) 36%, transparent 64%),
+    linear-gradient(0deg, rgba(10, 17, 32, 0.42) 0%, transparent 20%);
+}
+
+/* 配色跟着夜景走：冷白标题、雾蓝正文，品牌绿留给眉标与按钮做点缀 */
+[data-theme="dark"] .hero__title {
+  color: #f3f7ff;
+  text-shadow: 0 2px 20px rgba(2, 8, 20, 0.7), 0 1px 2px rgba(2, 8, 20, 0.5);
+}
+[data-theme="dark"] .hero__text {
+  color: #c7d4e8;
+  text-shadow: 0 1px 10px rgba(2, 8, 20, 0.55);
+}
+[data-theme="dark"] .hero__note { color: #c0cde0; }
+[data-theme="dark"] .hero__badge {
+  background: rgba(14, 23, 40, 0.8);
+  border-color: rgba(150, 180, 220, 0.24);
+  color: #c6d4e6;
+}
+
 /* ---------- 按钮 ---------- */
 
 /* 夜间品牌色被提亮成了浅绿，主按钮的文字必须反过来用深色，否则白字压浅绿看不清 */
@@ -1717,7 +1821,7 @@ button.thanks:disabled { background: transparent; }
 }
 
 [data-theme="dark"] .path:not(:disabled):hover {
-  background: #1a241e;
+  background: #1c2a3c;
   border-color: var(--brand-line);
 }
 
@@ -1732,12 +1836,12 @@ button.thanks:disabled { background: transparent; }
 
 /* 置灰卡在暗底上会连边框一起消失，opacity 收到 .62 就够，再低就成了空白 */
 [data-theme="dark"] .path:disabled {
-  background: #131a16;
-  border-color: #1e2823;
+  background: #111a28;
+  border-color: #24334a;
   opacity: 0.62;
 }
 
-[data-theme="dark"] .path:disabled:hover { border-color: #1e2823; }
+[data-theme="dark"] .path:disabled:hover { border-color: #24334a; }
 
 [data-theme="dark"] .path__flag {
   color: var(--ink-3);
@@ -1781,7 +1885,7 @@ button.thanks:disabled { background: transparent; }
 }
 
 [data-theme="dark"] .story:not(:disabled):hover {
-  background: #1a241e;
+  background: #1c2a3c;
   border-color: var(--brand-line);
   box-shadow: var(--shadow-md);
 }
@@ -1843,12 +1947,12 @@ button.thanks:disabled { background: transparent; }
 [data-theme="dark"] .empty__title { color: var(--brand-ink); }
 
 [data-theme="dark"] .skeleton {
-  background: linear-gradient(90deg, #1b2420 25%, #222e28 50%, #1b2420 75%);
+  background: linear-gradient(90deg, #1b2738 25%, #26344a 50%, #1b2738 75%);
   background-size: 200% 100%;
 }
 
 [data-theme="dark"] .skel__line {
-  background: linear-gradient(90deg, var(--line-soft) 25%, #202b25 50%, var(--line-soft) 75%);
+  background: linear-gradient(90deg, var(--line-soft) 25%, #243349 50%, var(--line-soft) 75%);
   background-size: 200% 100%;
 }
 
@@ -1870,7 +1974,7 @@ button.thanks:disabled { background: transparent; }
 }
 
 [data-theme="dark"] .gate__input {
-  background: #121917;
+  background: #111a28;
   border-color: var(--line);
   color: var(--ink);
 }
@@ -2099,28 +2203,22 @@ a.section__head--jump { color: inherit; text-decoration: none; }
 /* ---------- 窄屏微调 ---------- */
 
 @media (max-width: 680px) {
-  /* 手机上插画只有 200px 高，夜空和星星必须收在插画范围内：
-     一是别铺到下面的文字区，二是别把画面上半部糊成一片黑、盖过主图。
-     断点整体压缩，星星 30% 就淡完，山脊以下一粒都没有。 */
+  /* V1.6.4：窄屏 hero 的图片窗口是顶部 200px，夜空 / 星点必须收进这块，
+     否则会铺到下面的文字区。取景参数一律不覆盖——沿用浅色的
+     object-position: 62% center，两版画面才不会错位。 */
   [data-theme="dark"] .hero__sky,
-  [data-theme="dark"] .hero__stars {
-    bottom: auto;
-    height: 200px;
+  [data-theme="dark"] .hero__stars { bottom: auto; height: 200px; }
+  [data-theme="dark"] .hero__moonlight {
+    top: 14px;
+    right: 26%;
+    width: 32px;
+    height: 32px;
+    box-shadow:
+      0 0 9px 2px rgba(234, 240, 255, 0.22),
+      0 0 26px 9px rgba(168, 198, 250, 0.11);
   }
-  [data-theme="dark"] .hero__sky {
-    background: linear-gradient(180deg,
-      rgba(5, 10, 21, 0.9) 0%,
-      rgba(7, 14, 27, 0.75) 14%,
-      rgba(8, 16, 28, 0.46) 24%,
-      rgba(9, 17, 24, 0.14) 34%,
-      rgba(8, 14, 19, 0.03) 46%,
-      transparent 100%);
-  }
-  [data-theme="dark"] .hero__stars {
-    -webkit-mask-image: linear-gradient(180deg,
-      #000 0%, #000 5%, rgba(0, 0, 0, 0.45) 17%, transparent 29%);
-    mask-image: linear-gradient(180deg,
-      #000 0%, #000 5%, rgba(0, 0, 0, 0.45) 17%, transparent 29%);
+  [data-theme="dark"] .hero::after {
+    background: linear-gradient(0deg, rgba(10, 17, 32, 0.34) 0%, transparent 26%);
   }
 
   /* 顶栏在窄屏要装下品牌 + 探索版 + 切换 + 加号，切换按钮再收一档 */
@@ -2376,7 +2474,7 @@ a.story:hover .story__resonate { color: var(--brand); }
 .fab__btn:disabled { opacity: 0.55; cursor: default; }
 
 [data-theme="dark"] .fab__btn {
-  background: #1b2620;
+  background: #16202e;
   border-color: #33443a;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
 }

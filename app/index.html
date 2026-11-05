@@ -6,9 +6,9 @@
 <!-- 受控预览：不让搜索引擎收录（PRD F0） -->
 <meta name="robots" content="noindex, nofollow">
 <title>人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261105h">
+<link rel="stylesheet" href="assets/style.css?v=20261105m">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261105h"></script>
+<script src="assets/theme.js?v=20261105m"></script>
 </head>
 <body>
 
@@ -79,9 +79,13 @@
 
 <header class="hero">
   <img class="hero__img" src="assets/hero.jpg" alt="">
+  <!-- 夜间主图：由上面这张 hero.jpg 逐像素做夜色映射得到的同一幅画，
+       山脉 / 人物 / 道路 / 白花的位置和大小完全不变，只有色调不同。
+       两张图共用同一套尺寸与取景规则，切主题时画面不会有任何位移。 -->
+  <img class="hero__img hero__img--night" src="assets/hero-night.jpg?v=20261105m" alt="">
 
-  <!-- 夜景三层：白天 display:none，完全不参与布局；夜间才铺在图上（样式在 style.css 末尾）
-       星星由页面末尾的脚本按视口宽度生成，落在夜空带里，越靠近山脊越淡 -->
+  <!-- 夜空装饰：一层很轻的上部加深、一轮满月、脚本撒的星点。
+       白天全部 display:none；只有月亮和星星是新增元素，底图构图不动。 -->
   <div class="hero__sky"></div>
   <div class="hero__moonlight"></div>
   <div class="hero__stars" aria-hidden="true"></div>
@@ -215,10 +219,10 @@
 </main>
 
 <!-- SDK 本地托管（0.1.4-dev.ca27990.202610161713 / 2026-10-16 构建）：原来从 jsdelivr 取，单次要 1.9 秒，教室网络不通就整站白屏 -->
-<script src="assets/workbuddy-sdk.js?v=20261105h"></script>
-<script src="assets/cloud-config.js?v=20261105h"></script>
-<script src="assets/api.js?v=20261105h"></script>
-<script src="assets/boot.js?v=20261105h"></script>
+<script src="assets/workbuddy-sdk.js?v=20261105m"></script>
+<script src="assets/cloud-config.js?v=20261105m"></script>
+<script src="assets/api.js?v=20261105m"></script>
+<script src="assets/boot.js?v=20261105m"></script>
 <script>
 /* ---------- 夜空星星 ----------
    放在最前面：它不依赖 Renlu，万一 SDK 没加载也不会跟着失效。
@@ -230,8 +234,9 @@
   var host = document.querySelector('.hero__stars');
   if (!host) return;
   var narrow = window.matchMedia('(max-width: 680px)').matches;
-  var TOTAL = narrow ? 26 : 150;
-  var CLUSTERS = narrow ? 2 : 3;
+  /* 11-06 按参考图加密加亮：参考图星空又多又亮，桌面 150→240、窄屏 26→44 */
+  var TOTAL = narrow ? 44 : 240;
+  var CLUSTERS = narrow ? 3 : 4;
   var MAX_Y = narrow ? 40 : 44;
 
   var centers = [];
@@ -260,7 +265,7 @@
     var size = core * 2.8;                 // 柔边把核心包住，看上去就是 core 那么大
 
     var fade = 1 - (y / MAX_Y) * 0.2;      // 轻微消光，主要靠天空层的渐隐遮罩收尾
-    var o = (0.55 + Math.random() * 0.45) * fade;
+    var o = (0.68 + Math.random() * 0.32) * fade;
 
     var s = document.createElement('i');
     s.style.left = x + '%';
@@ -270,7 +275,7 @@
     s.style.marginLeft = (-size / 2) + 'px';
     s.style.marginTop = (-size / 2) + 'px';
     s.style.setProperty('--o', o.toFixed(2));
-    if (big > 0.88) s.setAttribute('data-glow', '');
+    if (big > 0.84) s.setAttribute('data-glow', '');
 
     if (Math.random() < 0.34) {            // 约三分之一会呼吸，周期与相位各自随机
       s.setAttribute('data-breathe', '');
