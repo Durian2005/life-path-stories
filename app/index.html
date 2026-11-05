@@ -167,7 +167,7 @@
             <path d="M12 2.6l1.9 5.6 5.6 1.9-5.6 1.9L12 17.6l-1.9-5.6L4.5 10l5.6-1.9z"/>
             <path d="M18.6 15.4l.9 2.5 2.5.9-2.5.9-.9 2.5-.9-2.5-2.5-.9 2.5-.9z" opacity=".65"/>
           </svg>
-          <span><span id="listTitle">升学备考</span> · 路上的故事</span>
+          <span><span id="listTitle">所有路</span> · 路上的故事</span>
         </h2>
         <a class="section__more" href="#" id="showAll">全部故事 →</a>
       </div>
@@ -310,7 +310,8 @@ const CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" strok
 const PAGE_SIZE = 10;          // R3-1：每页固定 10 条，不跟着屏幕大小变
 
 const state = {
-  topic: 'study', status: 'all', keyword: '',
+  // 默认「所有路」：扫码进来第一眼必须是全站的内容，不能只给一个主题的 6 条
+  topic: null, status: 'all', keyword: '',
   page: 0,                     // 已成功取到的页码，0 = 一页还没拿到
   hasMore: false,
   truncated: false,
@@ -338,7 +339,14 @@ function icon(name) {
 
 /* ---------- 渲染：路径卡 ---------- */
 
+/* 记住主题卡的条数与开放状态：点「所有路」时要按原样重绘，
+   不能拿空对象去画，否则徽标全掉、筹备中的卡会变成可点（AC-08/AC-12） */
+let lastCounts = {};
+let lastOpen = null;
+
 function renderPaths(counts = {}, openSet = null) {
+  lastCounts = counts;
+  lastOpen = openSet;
   elPaths.replaceChildren();
 
   TOPICS.forEach((t) => {
@@ -403,6 +411,8 @@ function jumpToStories() {
 }
 
 function syncTitle() {
+  // 默认就是全部，此时「全部故事 →」点了也不会有变化，索性不显示
+  $('showAll').hidden = !state.topic;
   if (!state.topic) { elTitle.textContent = '所有路'; return; }
   const t = TOPICS.find((x) => x.code === state.topic);
   elTitle.textContent = t ? t.name : '所有路';
@@ -772,7 +782,7 @@ document.querySelectorAll('.tabs__item').forEach((btn) => {
 $('showAll').addEventListener('click', (ev) => {
   ev.preventDefault();
   state.topic = null;
-  renderPaths({});
+  renderPaths(lastCounts, lastOpen);
   syncTitle();
   load();
 });
@@ -880,8 +890,12 @@ async function loadHeader() {
   try {
     const d = await api.me();
     const n = (d && d.nickname) || window.Renlu.getNickname() || '';
-    if (n) $('navAva').textContent = Array.from(n)[0];
-  } catch (e) { /* 头像保持首字「我」，不影响其它功能 */ }
+    if (!n) return;
+    // V1.6：头像改成预设线稿，昵称挂在 title 上（圆圈里放得下一笔，放不下两个字）
+    const av = (d && d.avatar) || window.Renlu.getAvatar() || 'leaf';
+    $('navAva').innerHTML = window.Renlu.avatarSvg(av, 20);
+    $('navAva').title = n;
+  } catch (e) { /* 头像保持默认叶子，不影响其它功能 */ }
 }
 
 function closeNotif() {

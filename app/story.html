@@ -164,6 +164,16 @@
         </svg>
         <span class="fab__n" id="fabLikeText">…</span>
       </button>
+
+      <!-- 收藏（V1.6.1）：五角星线稿，点亮后填实心。没有计数——收藏是给自己存的，不该有攀比 -->
+      <button class="fab__btn" id="fabFav" type="button" aria-label="收藏这段">
+        <svg class="fab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <!-- 标准五角星：五个尖角 + 五个内凹点，中心 (12,12)，外半径 8.6 -->
+          <path d="M12 4.2 L14.06 9.97 L20.18 10.14 L15.33 13.88 L17.06 19.76 L12 16.3 L6.94 19.76 L8.67 13.88 L3.82 10.14 L9.94 9.97 Z"/>
+        </svg>
+        <span class="fab__n fab__n--dot" id="fabFavText"></span>
+      </button>
     </div>
 
     <!-- V1.1 海报层：canvas 画完长按保存，不动后端 -->
@@ -356,7 +366,7 @@ $('btnThanks').addEventListener('click', async () => {
   }
 });
 
-/* ---------- V1.3 右下角固定交互：脚印（共鸣）+ 点赞 ----------
+/* ---------- 右下角固定交互：足迹（共鸣）+ 点赞 + 收藏 ----------
 
    为什么是 fixed：读完一段时手指往往已经滑到正文底部，互动按钮如果跟着走，
    读者想起「我也走过」时还得往回找。固定住，位置永远一致。
@@ -367,10 +377,12 @@ $('btnThanks').addEventListener('click', async () => {
 let currentDetail = null;
 let resonateState = { id: null, count: 0, done: false, can: false };
 let likeState = { id: null, count: 0, liked: false, can: false };
+let favState = { id: null, favorited: false, can: false };
 
 function renderFab() {
   const foot = $('fabFoot');
   const like = $('fabLike');
+  const fav = $('fabFav');
 
   $('fabFootText').textContent = resonateState.count;
   foot.classList.toggle('fab__btn--on', resonateState.done);
@@ -385,6 +397,14 @@ function renderFab() {
   like.title = likeState.can
     ? (likeState.liked ? '再点一下取消点赞' : '点个赞')
     : '自己的路标不用点赞';
+
+  // 收藏没有数字，状态只靠高亮和那个小圆点
+  fav.classList.toggle('fab__btn--on', favState.favorited);
+  fav.classList.toggle('fab__btn--marked', favState.favorited);
+  fav.disabled = !favState.can;
+  fav.title = favState.can
+    ? (favState.favorited ? '再点一下取消收藏' : '加个星标收藏')
+    : '自己的路标不用收藏';
 }
 
 /* 示例内容照样能看能生成海报，但不参与任何计数，整块按钮隐藏 */
@@ -395,6 +415,7 @@ function syncFab(d) {
 
   resonateState = { id: d.id, count: '…', done: false, can: !d.is_author };
   likeState = { id: d.id, count: '…', liked: false, can: !d.is_author };
+  favState = { id: d.id, favorited: false, can: !d.is_author };
   renderFab();
 
   // 两个查询并行：一个拿点赞/收藏，一个拿共鸣。谁先回来谁先填，互不等待。
@@ -403,6 +424,7 @@ function syncFab(d) {
     if (!x) return;
     likeState.count = x.like_count || 0;
     likeState.liked = Boolean(x.liked);
+    favState.favorited = Boolean(x.favorited);
     renderFab();
   }).catch(() => { /* 计数拿不到就保持 …，不瞎报 0 */ });
 
@@ -460,9 +482,25 @@ $('fabLike').addEventListener('click', async () => {
   }
 });
 
+/* 收藏：后端同样是 toggle，点第二下就是取消。「我的 → 收藏」里会跟着增减 */
+$('fabFav').addEventListener('click', async () => {
+  if (!favState.can) return;
+  const btn = $('fabFav');
+  btn.disabled = true;
+  try {
+    const r = await api.favorite(favState.id);
+    favState.favorited = Boolean(r.favorited);
+    renderFab();
+    if (r.favorited) bump(btn);
+  } catch (e) {
+    if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) { location.href = window.Renlu.gateUrl(); return; }
+    btn.disabled = false;
+  }
+});
+
 /* ---------- V1.1 海报：canvas 画一张可长按保存的图 ---------- */
 
-const POSTER_QR = 'assets/qr-share.png?v=20261105b';
+const POSTER_QR = 'assets/qr-share.png?v=20261105h';
 const POSTER_FONT = '-apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
 
 /* 按像素宽折行；maxLines 折满后把最后一行截成「…」结尾。

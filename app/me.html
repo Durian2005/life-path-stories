@@ -51,13 +51,16 @@
       发布成功。刚写的那一条在下面的「我写的」里。
     </div>
 
-    <!-- 个人空间头部：社交软件的个人主页形态，头像取昵称首字 -->
+    <!-- 个人空间头部：社交软件的个人主页形态，头像是预设线稿（不传真人照片，保持匿名） -->
     <header class="profile">
-      <div class="profile__ava" id="pAva" aria-hidden="true">我</div>
+      <div class="profile__ava" id="pAva" aria-hidden="true"></div>
 
       <div class="profile__main">
         <h1 class="profile__name" id="pName">正在读取…</h1>
         <p class="profile__sub" id="pSub">内容绑在这台浏览器上，不是账号</p>
+        <button class="profile__edit" id="btnEditProfile" type="button" aria-expanded="false" aria-controls="editBox">
+          编辑资料
+        </button>
       </div>
 
       <dl class="profile__stats" id="pStats">
@@ -67,6 +70,23 @@
         <div class="pstat"><dt>收藏</dt><dd id="statFav">·</dd></div>
       </dl>
     </header>
+
+    <!-- V1.6 编辑资料：名字 + 头像。改完历史帖子上的署名也会一起改 -->
+    <section class="profile-edit" id="editBox" hidden>
+      <p class="profile-edit__label">头像</p>
+      <div class="ava-picker" id="avaPicker" role="group" aria-label="选择头像"></div>
+
+      <p class="profile-edit__label">名字</p>
+      <input class="profile-edit__input" id="editNick" type="text" maxlength="12"
+             autocomplete="off" placeholder="2 到 12 个字">
+
+      <p class="profile-edit__note" id="editNote" hidden></p>
+
+      <div class="profile-edit__acts">
+        <button class="btn btn--primary" id="btnSaveProfile" type="button">保存</button>
+        <button class="btn btn--ghost" id="btnCancelProfile" type="button">取消</button>
+      </div>
+    </section>
 
     <!-- 四个 tab：我写的 / 赞过的 / 收藏 / 浏览记录 -->
     <div class="tabs tabs--profile" role="tablist" aria-label="我的内容">
@@ -228,11 +248,18 @@ function storyHref(id) {
 
 /* ---------- 头部资料 ---------- */
 
+let currentNickname = '';
+let currentAvatar = 'leaf';
+let pendingAvatar = 'leaf';
+
 async function loadProfile() {
   try {
     const d = await api.me();
     const nick = d.nickname || window.Renlu.getNickname() || '我';
-    $('pAva').textContent = Array.from(nick)[0] || '我';
+    currentNickname = nick;
+    currentAvatar = d.avatar || window.Renlu.getAvatar() || 'leaf';
+    window.Renlu.setIdentity(nick, currentAvatar);   // 导航栏头像下次直接用缓存
+    $('pAva').innerHTML = window.Renlu.avatarSvg(currentAvatar, 26);
     $('pName').textContent = nick;
 
     const joined = fmtDate(d.joined_at);
@@ -248,6 +275,97 @@ async function loadProfile() {
   } catch (e) {
     handleErr(e, $('pSub'));
   }
+}
+
+/* ---------- V1.6 编辑资料：名字 + 头像 ---------- */
+
+/* 头像选择器：8 个预设线稿，点中高亮。不放上传——
+   匿名产品不该鼓励传真人照片，而且教室网络传图容易卡在演示现场 */
+function renderAvaPicker() {
+  const box = $('avaPicker');
+  box.innerHTML = '';
+  window.Renlu.AVATARS.forEach((a) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ava-opt';
+    b.dataset.code = a.code;
+    b.title = a.name;
+    b.setAttribute('aria-label', a.name);
+    b.setAttribute('aria-pressed', String(a.code === pendingAvatar));
+    b.innerHTML = window.Renlu.avatarSvg(a.code, 22);
+    b.addEventListener('click', () => {
+      pendingAvatar = a.code;
+      [...box.children].forEach((x) => {
+        x.setAttribute('aria-pressed', String(x.dataset.code === pendingAvatar));
+      });
+    });
+    box.append(b);
+  });
+}
+
+function openEdit() {
+  pendingAvatar = currentAvatar;
+  $('editNick').value = currentNickname;
+  $('editNote').hidden = true;
+  renderAvaPicker();
+  $('editBox').hidden = false;
+  $('btnEditProfile').setAttribute('aria-expanded', 'true');
+  $('btnEditProfile').textContent = '收起';
+  $('editNick').focus();
+}
+
+function closeEdit() {
+  $('editBox').hidden = true;
+  $('btnEditProfile').setAttribute('aria-expanded', 'false');
+  $('btnEditProfile').textContent = '编辑资料';
+}
+
+$('btnEditProfile').addEventListener('click', () => {
+  if ($('editBox').hidden) openEdit(); else closeEdit();
+});
+
+$('btnCancelProfile').addEventListener('click', closeEdit);
+
+$('btnSaveProfile').addEventListener('click', async () => {
+  const nick = $('editNick').value.trim();
+  const note = $('editNote');
+  const btn = $('btnSaveProfile');
+
+  if (nick === currentNickname && pendingAvatar === currentAvatar) { closeEdit(); return; }
+  if (nick.length < 2 || nick.length > 12) {
+    note.hidden = false;
+    note.textContent = '名字要 2 到 12 个字';
+    return;
+  }
+
+  btn.disabled = true;
+  note.hidden = true;
+  try {
+    const r = await api.updateProfile({ nickname: nick, avatar: pendingAvatar });
+    currentNickname = r.nickname;
+    currentAvatar = r.avatar;
+    window.Renlu.setIdentity(r.nickname, r.avatar);
+    $('pName').textContent = r.nickname;
+    $('pAva').innerHTML = window.Renlu.avatarSvg(r.avatar, 26);
+    syncNavAvatar();
+    closeEdit();
+    // 名字改了，列表里作者名是后端一并对齐的，重新拉一次才看得到
+    if (r.renamed) loadTab(false);
+  } catch (e) {
+    if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) { goGate(); return; }
+    note.hidden = false;
+    note.textContent = (e && e.message) || '没保存成功，稍后再试';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* 顶部导航里没有头像位（个人空间页用返回链接），留着这个空函数是为了
+   以后在别的页面复用同一段保存逻辑时不至于报错 */
+function syncNavAvatar() {
+  const el = document.getElementById('navAva');
+  if (!el) return;
+  el.innerHTML = window.Renlu.avatarSvg(currentAvatar, 20);
 }
 
 /* ---------- 身份 / 恢复码（与 V1 完全一致） ---------- */

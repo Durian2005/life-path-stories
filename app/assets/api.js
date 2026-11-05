@@ -70,6 +70,54 @@ function setDeviceId(v) { localStorage.setItem(KEY_DEVICE, v); }
 
 function getNickname() { return localStorage.getItem(KEY_NICK) || ''; }
 
+/* ------------------------------------------------------------
+   预设头像（V1.6）
+   8 个单色线稿，纯 SVG 字符串，不引任何外部图片：
+     - 教室网络不可靠，外链图挂了头像就是一块空白
+     - 匿名产品不放真人照片，库里只存一个代码（leaf / moon / …）
+   ------------------------------------------------------------ */
+
+const KEY_AVATAR = 'renlu.avatar';
+
+const AVATARS = [
+  { code: 'leaf',  name: '叶子' },
+  { code: 'moon',  name: '月亮' },
+  { code: 'star',  name: '星星' },
+  { code: 'hill',  name: '山丘' },
+  { code: 'cloud', name: '云' },
+  { code: 'book',  name: '书' },
+  { code: 'cat',   name: '猫' },
+  { code: 'cup',   name: '茶杯' },
+];
+
+const AVATAR_PATHS = {
+  leaf:  '<path d="M19.5 4.5C10.5 4.5 4.5 9 4.5 15.5c0 2 1.2 3.5 3 3.5 7 0 12-6 12-14.5z"/><path d="M4.8 19.2C6.6 13.6 10.2 9.8 15 7.2"/>',
+  moon:  '<path d="M20.5 13.5A8.8 8.8 0 1 1 10.5 3.4a7.2 7.2 0 0 0 10 10.1z"/>',
+  star:  '<path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>',
+  hill:  '<path d="M3.2 18.4l5.5-8.6 3.4 5.2 2.4-3.3 6.3 6.7z"/><circle cx="17.2" cy="6.4" r="1.7"/>',
+  cloud: '<path d="M7.2 17.4h10a3.4 3.4 0 0 0 .3-6.8 5.1 5.1 0 0 0-9.7 1.3 3.3 3.3 0 0 0-.6 5.5z"/>',
+  book:  '<path d="M5 5.2h8.4a3.2 3.2 0 0 1 3.2 3.2v11H8.2A3.2 3.2 0 0 1 5 16.2z"/><path d="M16.6 8.6H19v11h-2.4"/><path d="M8.2 8.6h4.4M8.2 11.6h4.4"/>',
+  cat:   '<path d="M5.4 10.4V5.6l3.3 2.2a8.4 8.4 0 0 1 6.6 0l3.3-2.2v4.8"/><path d="M5.4 10.4a6.6 6.6 0 0 0 13.2 0"/><circle cx="9.7" cy="11.2" r=".85"/><circle cx="14.3" cy="11.2" r=".85"/>',
+  cup:   '<path d="M6 8.6h9.4v7a4 4 0 0 1-4 4h-1.4a4 4 0 0 1-4-4z"/><path d="M15.4 10.4h1.8a2.6 2.6 0 0 1 0 5.2h-1.8"/><path d="M7.6 4.6v1.8M10.7 4v2.4M13.8 4.6v1.8"/>',
+};
+
+/** 头像 SVG。未知代码一律回退到叶子，绝不返回空字符串 */
+function avatarSvg(code, size) {
+  const s = size || 22;
+  const key = AVATAR_PATHS[code] ? code : 'leaf';
+  return '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s + '" fill="none"' +
+    ' stroke="currentColor" stroke-width="1.6" stroke-linecap="round"' +
+    ' stroke-linejoin="round" aria-hidden="true">' + AVATAR_PATHS[key] + '</svg>';
+}
+
+function getAvatar() { return localStorage.getItem(KEY_AVATAR) || ''; }
+
+/** 昵称与头像一起写本地缓存：导航栏头像不必等接口回来就能画对 */
+function setIdentity(nick, avatarCode) {
+  if (nick) localStorage.setItem(KEY_NICK, nick);
+  if (avatarCode) localStorage.setItem(KEY_AVATAR, avatarCode);
+}
+
 const session = {
   get token() { return localStorage.getItem(KEY_TOKEN) || ''; },
   set token(v) {
@@ -280,6 +328,20 @@ const api = {
     return call('api_admin_story', { p_pass: pass, p_story_id: id, p_action: action });
   },
 
+  /* A-30 我的身份（昵称 + 头像代码）。导航栏头像用它，比 api_me 轻 */
+  async identity() {
+    await ensureSession();
+    return call('api_my_identity', { p_token: session.token });
+  },
+
+  /* A-31 改昵称 / 换头像。只传想改的那个，另一个传 null */
+  async updateProfile({ nickname = null, avatar = null }) {
+    await ensureSession();
+    return call('api_update_profile', {
+      p_token: session.token, p_nickname: nickname, p_avatar: avatar,
+    });
+  },
+
   /* A-19 点赞 / 取消点赞（V1.3，toggle）。返回 { liked, like_count }。
      作者会在首页铃铛里收到一条，但看不到是谁——接口也不返回操作者身份 */
   async like(id) {
@@ -380,6 +442,7 @@ function gateUrl() {
 /* 挂到全局，供普通 <script> 使用。
    不用 ES module 是刻意的：file:// 下浏览器会以 CORS 为由拒绝加载相对模块，
    队友双击打开就看不到任何内容。 */
-global.Renlu = { ApiError, api, session, ensureSession, getDeviceId, setDeviceId, bindCloud, cloudReady, getNickname, gateUrl };
+global.Renlu = { ApiError, api, session, ensureSession, getDeviceId, setDeviceId, bindCloud, cloudReady, getNickname, gateUrl,
+  AVATARS, avatarSvg, getAvatar, setIdentity };
 
 })(window);
