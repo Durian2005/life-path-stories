@@ -6,9 +6,9 @@
 <!-- 受控预览：不让搜索引擎收录（PRD F0） -->
 <meta name="robots" content="noindex, nofollow">
 <title>人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261105b">
+<link rel="stylesheet" href="assets/style.css?v=20261105h">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261105b"></script>
+<script src="assets/theme.js?v=20261105h"></script>
 </head>
 <body>
 
@@ -215,10 +215,10 @@
 </main>
 
 <!-- SDK 本地托管（0.1.4-dev.ca27990.202610161713 / 2026-10-16 构建）：原来从 jsdelivr 取，单次要 1.9 秒，教室网络不通就整站白屏 -->
-<script src="assets/workbuddy-sdk.js?v=20261105b"></script>
-<script src="assets/cloud-config.js?v=20261105b"></script>
-<script src="assets/api.js?v=20261105b"></script>
-<script src="assets/boot.js?v=20261105b"></script>
+<script src="assets/workbuddy-sdk.js?v=20261105h"></script>
+<script src="assets/cloud-config.js?v=20261105h"></script>
+<script src="assets/api.js?v=20261105h"></script>
+<script src="assets/boot.js?v=20261105h"></script>
 <script>
 /* ---------- 夜空星星 ----------
    放在最前面：它不依赖 Renlu，万一 SDK 没加载也不会跟着失效。
@@ -507,6 +507,7 @@ function hydrateResonate(items) {
         el.classList.add('story__resonate--done');
         el.textContent = '◎ 你也走过这段';
       } else {
+        delete el.dataset.done;
         el.textContent = `◎ ${x.resonate_count || 0} 人也走过`;
       }
     });
@@ -516,22 +517,24 @@ function hydrateResonate(items) {
 /* 事件委托绑一次：卡片本身是 <a>，点共鸣要拦掉默认跳转 */
 elList.addEventListener('click', (e) => {
   const b = e.target.closest('.story__resonate');
-  if (!b || b.dataset.static || b.dataset.done || b.dataset.pending) return;
+  if (!b || b.dataset.static || b.dataset.pending) return;
   e.preventDefault();
   e.stopPropagation();
   b.dataset.pending = '1';
   api.resonate(b.dataset.id).then((r) => {
-    b.dataset.done = '1';
-    b.classList.add('story__resonate--done');
-    b.textContent = `◎ 你也走过这段 · 共 ${r.resonate_count} 人`;
-  }).catch((err) => {
     delete b.dataset.pending;
-    // 41001 = 已经打过点（换设备等边界），本地直接置为已点
-    if (err instanceof ApiError && err.code === 41001) {
+    // 后端是 toggle：点过再点一下就是取消，文案和计数都要能退回去
+    const on = Boolean(r.resonated);
+    b.classList.toggle('story__resonate--done', on);
+    if (on) {
       b.dataset.done = '1';
-      b.classList.add('story__resonate--done');
+      b.textContent = `◎ 你也走过这段 · 共 ${r.resonate_count} 人`;
+    } else {
+      delete b.dataset.done;
+      b.textContent = `◎ ${r.resonate_count || 0} 人也走过`;
     }
-    // 其它错误保持可再点
+  }).catch(() => {
+    delete b.dataset.pending;   // 失败保持原样，还能再点
   });
 });
 

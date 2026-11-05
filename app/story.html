@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>一段路 · 人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261105b">
+<link rel="stylesheet" href="assets/style.css?v=20261105h">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261105b"></script>
+<script src="assets/theme.js?v=20261105h"></script>
 </head>
 <body>
 
@@ -137,7 +137,8 @@
 
     <!-- V1.3 右下角固定交互：脚印（我也走过这段）+ 点赞。
          position: fixed，滚动时不动；每一篇详情页都在同一位置、同一尺寸。
-         竖排两个圆钮，数字是各自计数，点过之后高亮并可再点取消（点赞）。
+         竖排三个圆钮：足迹（共鸣）、点赞、收藏。前两个带计数，收藏不带。
+         点过之后高亮，再点一下取消（三个都是 toggle）。
          示例内容整块隐藏：它能被看，但不参与任何计数。 -->
     <div class="fab" id="fab" hidden>
       <button class="fab__btn" id="fabFoot" type="button" aria-label="我也走过这段">
@@ -223,10 +224,10 @@
 </main>
 
 <!-- SDK 本地托管（0.1.4-dev.ca27990.202610161713 / 2026-10-16 构建）：原来从 jsdelivr 取，单次要 1.9 秒，教室网络不通就整站白屏 -->
-<script src="assets/workbuddy-sdk.js?v=20261105b"></script>
-<script src="assets/cloud-config.js?v=20261105b"></script>
-<script src="assets/api.js?v=20261105b"></script>
-<script src="assets/boot.js?v=20261105b"></script>
+<script src="assets/workbuddy-sdk.js?v=20261105h"></script>
+<script src="assets/cloud-config.js?v=20261105h"></script>
+<script src="assets/api.js?v=20261105h"></script>
+<script src="assets/boot.js?v=20261105h"></script>
 <script>
 const { api, ApiError } = window.Renlu;
 
@@ -377,8 +378,8 @@ $('btnThanks').addEventListener('click', async () => {
    为什么是 fixed：读完一段时手指往往已经滑到正文底部，互动按钮如果跟着走，
    读者想起「我也走过」时还得往回找。固定住，位置永远一致。
 
-   两个按钮的可见性、可点性、计数文案全在 renderFab 里决定，
-   事件处理器只负责改 state 再调它一次，不各自维护一份显示逻辑。 */
+   三个按钮都是 toggle：点过再点一下就取消。可见性、可点性、计数文案
+   全在 renderFab 里决定，事件处理器只负责改 state 再调它一次。 */
 
 let currentDetail = null;
 let resonateState = { id: null, count: 0, done: false, can: false };
@@ -392,10 +393,10 @@ function renderFab() {
 
   $('fabFootText').textContent = resonateState.count;
   foot.classList.toggle('fab__btn--on', resonateState.done);
-  foot.disabled = !resonateState.can || resonateState.done;
-  foot.title = resonateState.done
-    ? '你已经走过这段'
-    : (resonateState.can ? '我也走过这段' : '自己的路标不用打点');
+  foot.disabled = !resonateState.can;
+  foot.title = resonateState.can
+    ? (resonateState.done ? '再点一下取消打点' : '我也走过这段')
+    : '自己的路标不用打点';
 
   $('fabLikeText').textContent = likeState.count;
   like.classList.toggle('fab__btn--on', likeState.liked);
@@ -451,22 +452,18 @@ function bump(el) {
 }
 
 $('fabFoot').addEventListener('click', async () => {
-  if (!resonateState.can || resonateState.done) return;
+  if (!resonateState.can) return;
   const btn = $('fabFoot');
   btn.disabled = true;
   try {
+    // 后端是 toggle：再点一下删掉打点记录，计数自己会退回去
     const r = await api.resonate(resonateState.id);
-    resonateState.count = r.resonate_count;
-    resonateState.done = true;
+    resonateState.done = Boolean(r.resonated);
+    resonateState.count = r.resonate_count || 0;
     renderFab();
-    bump(btn);
+    if (r.resonated) bump(btn);   // 取消时不弹动画，和点赞 / 收藏一致
   } catch (e) {
     if (e instanceof ApiError && (e.isGateClosed || e.isAuthLost)) { location.href = window.Renlu.gateUrl(); return; }
-    if (e instanceof ApiError && e.code === 41001) {   // 已经打过点等边界
-      resonateState.done = true;
-      renderFab();
-      return;
-    }
     btn.disabled = false;
   }
 });
