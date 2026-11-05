@@ -2731,6 +2731,9 @@ a.story:hover .story__resonate { color: var(--brand); }
 /* 没收藏时不占位，免得三个按钮右上角都挂个空泡 */
 .fab__btn:not(.fab__btn--marked) .fab__n--dot { display: none; }
 
+/* V1.6.1 收藏换成星标：未收藏是空心，点亮后填实心，跟右上角小圆点互为印证。
+   只作用于收藏钮，点赞和脚印仍保持线稿，别误伤。 */
+.fab__btn--on#fabFav .fab__icon { fill: currentColor; }
 
 /* ---------- 编辑资料（V1.6） ---------- */
 
