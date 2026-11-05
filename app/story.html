@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>一段路 · 人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261101d">
+<link rel="stylesheet" href="assets/style.css?v=20261101e">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261101d"></script>
+<script src="assets/theme.js?v=20261101e"></script>
 </head>
 <body>
 
@@ -138,7 +138,7 @@
             <span>生成海报</span>
           </button>
         </div>
-        <a class="detail__more" href="index.html">看别的一段路 →</a>
+        <a class="detail__more" href="index.html">回到所有故事 →</a>
       </div>
     </article>
 
@@ -146,7 +146,10 @@
     <div id="posterLayer" hidden class="poster-layer">
       <div class="poster-box">
         <img id="posterImg" class="poster-img" alt="这段路的故事海报">
-        <p class="poster-tip">长按图片可以保存 / 转发给同路的人</p>
+        <p class="poster-tip">
+          <span class="tip-touch">长按图片可以保存 / 转发给同路的人</span>
+          <span class="tip-mouse">右键图片可以另存为，或复制下面的链接转发</span>
+        </p>
         <!-- V1.2 海报里的二维码是整站一张、只落到首页，收海报的人找不到这段。
              这里补一条能直接定位到本条故事的链接 -->
         <button class="btn btn--primary btn--block" id="btnCopyLink" type="button">复制这段的链接</button>
@@ -179,10 +182,11 @@
   </div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="assets/cloud-config.js?v=20261101d"></script>
-<script src="assets/api.js?v=20261101d"></script>
-<script src="assets/boot.js?v=20261101d"></script>
+<!-- SDK 本地托管（0.1.4-dev.ca27990.202610161713 / 2026-10-16 构建）：原来从 jsdelivr 取，单次要 1.9 秒，教室网络不通就整站白屏 -->
+<script src="assets/workbuddy-sdk.js?v=20261101e"></script>
+<script src="assets/cloud-config.js?v=20261101e"></script>
+<script src="assets/api.js?v=20261101e"></script>
+<script src="assets/boot.js?v=20261101e"></script>
 <script>
 const { api, ApiError } = window.Renlu;
 
@@ -391,7 +395,7 @@ $('btnResonate').addEventListener('click', async () => {
 
 /* ---------- V1.1 海报：canvas 画一张可长按保存的图 ---------- */
 
-const POSTER_QR = 'assets/qr-share.png?v=20261101d';
+const POSTER_QR = 'assets/qr-share.png?v=20261101e';
 const POSTER_FONT = '-apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
 
 /* 按像素宽折行；maxLines 折满后把最后一行截成「…」结尾。

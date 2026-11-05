@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>进入 · 人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261101d">
+<link rel="stylesheet" href="assets/style.css?v=20261101e">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261101d"></script>
+<script src="assets/theme.js?v=20261101e"></script>
 <!-- 带口令的链接（路演扫码是这个）：首帧就得把输入框收起来。
      下面那段 CDN 的 SDK 是同步阻塞的，手机上要等几百毫秒到一两秒，
      若等它加载完再隐藏，「访问口令」输入框会先亮一下再消失，看起来像还要输口令。
@@ -53,10 +53,11 @@
   <p class="gate__foot">口令只用来挡住路人和搜索引擎，不区分你是谁。</p>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="assets/cloud-config.js?v=20261101d"></script>
-<script src="assets/api.js?v=20261101d"></script>
-<script src="assets/boot.js?v=20261101d"></script>
+<!-- SDK 本地托管（0.1.4-dev.ca27990.202610161713 / 2026-10-16 构建）：原来从 jsdelivr 取，单次要 1.9 秒，教室网络不通就整站白屏 -->
+<script src="assets/workbuddy-sdk.js?v=20261101e"></script>
+<script src="assets/cloud-config.js?v=20261101e"></script>
+<script src="assets/api.js?v=20261101e"></script>
+<script src="assets/boot.js?v=20261101e"></script>
 <script>
 (function () {
   const form = document.getElementById('form');
@@ -75,7 +76,7 @@
   /* 静态托管不发 Cache-Control，手机浏览器会按「上次修改时间」自己算一段缓存期，
      改完代码观众可能还看着旧的样式表。跳转时带一个版本参数绕开它。
      改前端后记得把 BUILD 一起改掉。 */
-  const BUILD = '20261101d';
+  const BUILD = '20261101e';
   function withBuild(u) {
     if (new RegExp('[?&]v=' + BUILD).test(u)) return u;
     return u + (u.indexOf('?') >= 0 ? '&' : '?') + 'v=' + BUILD;
