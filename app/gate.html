@@ -4,19 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>进入 · 人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261101e">
+<title>正在进入 · 人生的路你走到哪了</title>
+<link rel="stylesheet" href="assets/style.css?v=20261105b">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261101e"></script>
-<!-- 带口令的链接（路演扫码是这个）：首帧就得把输入框收起来。
-     下面那段 CDN 的 SDK 是同步阻塞的，手机上要等几百毫秒到一两秒，
-     若等它加载完再隐藏，「访问口令」输入框会先亮一下再消失，看起来像还要输口令。
-     这里只做一件事：HTML 一下来就按 URL 打标记，样式表立刻生效，不依赖任何外部资源。 -->
-<script>
-  if (/[?&]k=/.test(location.search)) {
-    document.documentElement.className += ' gate-silent';
-  }
-</script>
+<script src="assets/theme.js?v=20261105b"></script>
 </head>
 <body class="gate-body">
 
@@ -35,129 +26,96 @@
   </span>
 </button>
 
+<!-- V1.4：不再有访问口令。
+     这个页面只剩一个职责 —— 在没有会话凭证时静默建号，然后回到原页面。
+     老链接（带 ?k=）和海报二维码依旧指向这里，所以页面必须留着，
+     但它不再有任何输入框：观众点开就是「正在进入…」，一两秒后落地到内容。 -->
 <main class="gate">
   <p class="gate__brand">人生的路你走到哪了</p>
-  <h1 class="gate__title">这里是一段段真实的经历</h1>
-  <p class="gate__desc" id="desc">内容还在小范围试读。<br>输入访问口令就能进去。</p>
-
-  <!-- 带口令的链接：不渲染输入框，只显示这一行（路演时观众点开走的就是这条） -->
-  <p class="gate__entering" id="entering" hidden>正在进入…</p>
-
-  <form class="gate__form" id="form" novalidate>
-    <input class="gate__input" id="pass" type="password"
-           placeholder="访问口令" autocomplete="current-password" required>
-    <button class="btn btn--primary btn--block" id="submit" type="submit">进 入</button>
-  </form>
-
+  <p class="gate__entering" id="entering">正在进入…</p>
   <p class="gate__err" id="err" hidden></p>
-  <p class="gate__foot">口令只用来挡住路人和搜索引擎，不区分你是谁。</p>
+  <button class="btn btn--primary btn--block" id="retry" type="button" hidden>再试一次</button>
 </main>
 
 <!-- SDK 本地托管（0.1.4-dev.ca27990.202610161713 / 2026-10-16 构建）：原来从 jsdelivr 取，单次要 1.9 秒，教室网络不通就整站白屏 -->
-<script src="assets/workbuddy-sdk.js?v=20261101e"></script>
-<script src="assets/cloud-config.js?v=20261101e"></script>
-<script src="assets/api.js?v=20261101e"></script>
-<script src="assets/boot.js?v=20261101e"></script>
+<script src="assets/workbuddy-sdk.js?v=20261105b"></script>
+<script src="assets/cloud-config.js?v=20261105b"></script>
+<script src="assets/api.js?v=20261105b"></script>
+<script src="assets/boot.js?v=20261105b"></script>
 <script>
 (function () {
-  const form = document.getElementById('form');
-  const desc = document.getElementById('desc');
-  const input = document.getElementById('pass');
-  const submit = document.getElementById('submit');
-  const err = document.getElementById('err');
-  const entering = document.getElementById('entering');
+  'use strict';
+
+  var err = document.getElementById('err');
+  var entering = document.getElementById('entering');
+  var retry = document.getElementById('retry');
 
   // 从哪来：门页不该把原链接吞掉，通过后回到原来那一页（AC-04）
-  const q = new URLSearchParams(location.search);
-  const rawTo = q.get('to') || 'index.html';
-  const to = /^https?:|^\/\//i.test(rawTo) ? 'index.html' : rawTo;
-  const key = q.get('k') || '';
+  var q = new URLSearchParams(location.search);
+  var rawTo = q.get('to') || 'index.html';
+  var to = /^https?:|^\/\//i.test(rawTo) ? 'index.html' : rawTo;
 
   /* 静态托管不发 Cache-Control，手机浏览器会按「上次修改时间」自己算一段缓存期，
      改完代码观众可能还看着旧的样式表。跳转时带一个版本参数绕开它。
      改前端后记得把 BUILD 一起改掉。 */
-  const BUILD = '20261101e';
+  var BUILD = '20261105b';
   function withBuild(u) {
     if (new RegExp('[?&]v=' + BUILD).test(u)) return u;
     return u + (u.indexOf('?') >= 0 ? '&' : '?') + 'v=' + BUILD;
   }
-  const toV = withBuild(to);
 
-  function fail(msg) {
-    err.hidden = false;
-    err.textContent = msg;
-    submit.disabled = false;
-    submit.textContent = '进 入';
-  }
-
-  /* 静默通过失败时把表单放回来，别让人对着「正在进入…」干等。
-     ⚠️ 必须摘掉 <head> 打的 gate-silent，否则样式里的 !important 压着，表单永远出不来 */
-  function fallbackToForm(msg) {
-    document.documentElement.classList.remove('gate-silent');
-    entering.hidden = true;
-    desc.hidden = false;
-    form.hidden = false;
-    fail(msg);
-    input.focus();
-  }
-
-  async function enter(pass, silent) {
+  /* 落地地址：把老链接里的 ?k=（已作废的明文口令）去掉，
+     其余查询参数原样带走 —— sharecode 丢了静态资源会 403。
+     没写 to 时（海报二维码就是这种）用当前 search 拼回首页。 */
+  function landing() {
     try {
-      await window.Renlu.api.gateVerify(pass);   // 口令校验，拿到 gate_ok
-      await window.Renlu.api.sessionInit();      // 换正式 token，首次会建号
-      location.replace(withBuild(finish()));
-    } catch (ex) {
-      if (ex && ex.code === 42903) {
-        const msg = '试得有点多，过一会儿再来';
-        if (silent) fallbackToForm(msg); else fail(msg);
-        submit.disabled = true;
-        setTimeout(function () { submit.disabled = false; }, 20000);
-        return;
-      }
-      const msg = (ex && ex.message) || '进不去，稍后再试';
-      if (silent) fallbackToForm(msg); else fail(msg);
-    }
-  }
-
-  /* 静默通过后把 ?k= 从地址栏去掉：观众不该在网址里看到口令 */
-  function finish() {
-    if (!key) return to;
-    try {
-      const u = new URL(to, location.href);
+      var u = new URL(to, location.href);
       u.searchParams.delete('k');
+      if (!q.get('to')) {
+        var here = new URLSearchParams(location.search);
+        here.delete('k');
+        here.delete('to');
+        here.forEach(function (v, k) { if (!u.searchParams.has(k)) u.searchParams.set(k, v); });
+      }
       return (u.pathname.replace(/^\//, '') || 'index.html') + u.search;
     } catch (e) {
       return to;
     }
   }
 
+  function showError(msg) {
+    entering.hidden = true;
+    err.hidden = false;
+    err.textContent = msg;
+    retry.hidden = false;
+  }
+
+  async function enter() {
+    err.hidden = true;
+    retry.hidden = true;
+    entering.hidden = false;
+    try {
+      // 没有口令这一步了：直接建号 / 取会话
+      await window.Renlu.api.sessionInit();
+      location.replace(withBuild(landing()));
+    } catch (ex) {
+      if (ex && ex.code === 42903) {
+        showError('现在进入的人有点多，过一会儿再试');
+        return;
+      }
+      showError((ex && ex.message) || '进不去，稍后再试');
+    }
+  }
+
+  retry.addEventListener('click', enter);
+
   // 已经有凭证：门口不再挡第二次
   if (window.Renlu && window.Renlu.session && window.Renlu.session.token) {
-    location.replace(toV);
+    location.replace(withBuild(landing()));
     return;
   }
 
-  // 链接里带了口令（路演分享链接）：静默通过，不出现输入框
-  if (key) {
-    form.hidden = true;
-    desc.hidden = true;
-    entering.hidden = false;
-    enter(key, true);
-    return;
-  }
-
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    const pass = input.value.trim();
-    if (!pass) { fail('先输入口令'); return; }
-
-    err.hidden = true;
-    submit.disabled = true;
-    submit.textContent = '正在进入…';
-    enter(pass, false);
-  });
-
-  input.focus();
+  enter();
 })();
 </script>
 </body>
