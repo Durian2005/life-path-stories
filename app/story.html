@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>一段路 · 人生的路你走到哪了</title>
-<link rel="stylesheet" href="assets/style.css?v=20261101b">
+<link rel="stylesheet" href="assets/style.css?v=20261101d">
 <!-- 必须同步、在 body 之前：首帧就定下昼夜，否则会先白一下再变黑 -->
-<script src="assets/theme.js?v=20261101b"></script>
+<script src="assets/theme.js?v=20261101d"></script>
 </head>
 <body>
 
@@ -104,6 +104,12 @@
         </form>
       </section>
 
+      <!-- V1.2 读完后继：读完这一段，最自然的动作是接着读下一段，
+           不该被扔回列表页顶部重新滚。放在动作区之上独占一行，因为它是「下一步」 -->
+      <div class="detail__next">
+        <button class="btn btn--primary btn--block" id="btnNext" type="button">再读一段 →</button>
+      </div>
+
       <div class="detail__foot">
         <div class="detail__acts">
           <!-- V1.1 共鸣：同设备一次，语义是「我也走过这段」 -->
@@ -141,6 +147,10 @@
       <div class="poster-box">
         <img id="posterImg" class="poster-img" alt="这段路的故事海报">
         <p class="poster-tip">长按图片可以保存 / 转发给同路的人</p>
+        <!-- V1.2 海报里的二维码是整站一张、只落到首页，收海报的人找不到这段。
+             这里补一条能直接定位到本条故事的链接 -->
+        <button class="btn btn--primary btn--block" id="btnCopyLink" type="button">复制这段的链接</button>
+        <p class="poster-link" id="posterLink" hidden></p>
         <button class="btn btn--ghost" id="btnPosterClose" type="button">关闭</button>
       </div>
     </div>
@@ -170,9 +180,9 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="assets/cloud-config.js?v=20261101b"></script>
-<script src="assets/api.js?v=20261101b"></script>
-<script src="assets/boot.js?v=20261101b"></script>
+<script src="assets/cloud-config.js?v=20261101d"></script>
+<script src="assets/api.js?v=20261101d"></script>
+<script src="assets/boot.js?v=20261101d"></script>
 <script>
 const { api, ApiError } = window.Renlu;
 
@@ -258,6 +268,7 @@ function render(d) {
   // 补写入口只给作者，且只在「还没走完」时给
   $('compose').hidden = !(d.is_author && d.status === 'open');
 
+  warmNext(d);                // V1.2 读完之后的出口：同主题的下一段
   show('article');
   document.title = `${d.title} · 人生的路你走到哪了`;
 }
@@ -380,7 +391,7 @@ $('btnResonate').addEventListener('click', async () => {
 
 /* ---------- V1.1 海报：canvas 画一张可长按保存的图 ---------- */
 
-const POSTER_QR = 'assets/qr-share.png?v=20261101b';
+const POSTER_QR = 'assets/qr-share.png?v=20261101d';
 const POSTER_FONT = '-apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
 
 /* 按像素宽折行；maxLines 折满后把最后一行截成「…」结尾。
@@ -497,6 +508,98 @@ function drawPoster(d) {
     img.src = POSTER_QR;
   });
 }
+
+/* ---------- V1.2 再读一段：同主题的下一段 ----------
+   详情页拿不到列表页的筛选状态，所以自己按 topic_code 静默预热一份 id 队列，
+   点按钮时取当前这条之后的一篇，走到头就绕回第一篇。不新增后端接口。
+   跳转必须带着 location.search 走 —— sharecode 靠它放行静态资源，丢了就是白屏。 */
+const nextQueue = { ids: [], i: 0 };
+
+function warmNext(d) {
+  const btn = $('btnNext');
+  nextQueue.ids = [];
+  nextQueue.i = 0;
+  btn.textContent = '再读一段 →';
+  btn.disabled = false;
+  // status 必须给 null 而不是 'all' —— 后端只认 open / resolved / null，
+  // 传 'all' 会当成「状态等于 all」去匹配，一条都查不到
+  api.list({ topic: d.topic_code || null, status: null, page: 1, size: 10 })
+    .then((r) => {
+      // 排掉自己：连点两下还是同一条，会让人以为按钮坏了
+      nextQueue.ids = (r.items || [])
+        .map((x) => String(x.story_id))
+        .filter((id) => id !== String(d.id));
+      if (!nextQueue.ids.length) btn.textContent = '看全部故事 →';
+    })
+    .catch(() => { nextQueue.ids = []; btn.textContent = '看全部故事 →'; });
+}
+
+/* 只换 id，其余查询参数（sharecode / k）原样带走 */
+function goWithStory(id) {
+  const u = new URL(location.href);
+  u.searchParams.set('id', id);
+  location.href = (u.pathname.replace(/^\//, '') || 'story.html') + u.search;
+}
+
+function goAllStories() {
+  const u = new URL(location.href);
+  u.searchParams.delete('id');
+  location.href = 'index.html' + u.search;
+}
+
+$('btnNext').addEventListener('click', () => {
+  if (!nextQueue.ids.length) { goAllStories(); return; }
+  if (nextQueue.i >= nextQueue.ids.length) nextQueue.i = 0;   // 读到头了绕回去
+  goWithStory(nextQueue.ids[nextQueue.i++]);
+});
+
+/* ---------- V1.2 复制这段的链接 ----------
+   海报里那张二维码是整站一张、只落到首页，收海报的人翻不到这一段。
+   这里给出带 id 的完整地址。sharecode 必须在里面 —— 少了它对方用新浏览器
+   第一次请求就是 403（静态资源靠它放行），打开是白屏。 */
+function storyShareUrl() {
+  const u = new URL(location.href);
+  if (storyId) u.searchParams.set('id', storyId);
+  u.searchParams.delete('v');       // 版本参数只对本站绕缓存有意义，分享出去只会变长
+  return u.href;
+}
+
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) { /* 微信 X5 常把 clipboard API 禁掉，往下走回退 */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch (e) { return false; }
+}
+
+$('btnCopyLink').addEventListener('click', async () => {
+  const btn = $('btnCopyLink');
+  const tip = $('posterLink');
+  const url = storyShareUrl();
+  if (await copyText(url)) {
+    btn.textContent = '已复制 ✓';
+    tip.hidden = true;
+    setTimeout(() => { btn.textContent = '复制这段的链接'; }, 2000);
+  } else {
+    // 复制不了就把链接摊出来，长按整条选中
+    btn.textContent = '长按下面的链接复制';
+    tip.textContent = url;
+    tip.hidden = false;
+  }
+});
 
 $('btnPoster').addEventListener('click', async () => {
   if (!currentDetail) return;
