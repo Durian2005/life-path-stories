@@ -2603,3 +2603,116 @@ a.story:hover .story__resonate { color: var(--brand); }
   .nav__brand-full { display: none; }
   .nav__brand-short { display: inline; }
 }
+
+/* ---------- 管理页（V1.4） ---------- */
+
+.admin { max-width: 760px; padding-top: 30px; padding-bottom: 70px; }
+
+.admin-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-card__kicker {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+
+.admin-card__title { margin: 0 0 6px; font-size: 19px; color: var(--ink); }
+
+.admin-card__desc {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.85;
+  color: var(--ink-2);
+}
+
+.admin-form { display: flex; gap: 10px; margin-top: 16px; }
+
+/* 复用门页输入框的皮，但它是 width:100% 的，放在 flex 行里会把按钮挤出去 */
+.admin-form .gate__input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  text-align: left;
+  letter-spacing: normal;
+}
+
+.admin-err { margin: 12px 0 0; font-size: 12.5px; color: var(--accent); }
+
+.admin-state { margin: 0; font-size: 19px; font-weight: 600; color: var(--ink); }
+.admin-state--on { color: var(--brand); }
+.admin-state--off { color: var(--accent); }
+
+.admin-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+
+.admin-meta { font-size: 11.5px; letter-spacing: 0; color: var(--ink-3); }
+
+.admin-list { margin-top: 14px; border-top: 1px solid var(--line-soft); }
+
+.admin-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.admin-row__main { flex: 1; min-width: 0; }
+
+.admin-row__title {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-row__meta { margin: 0; font-size: 11.5px; color: var(--ink-3); }
+
+.admin-row--hidden .admin-row__title { color: var(--ink-3); text-decoration: line-through; }
+
+.admin-row__acts { display: flex; flex-shrink: 0; gap: 6px; }
+
+.admin-link {
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.admin-link:hover { border-color: var(--brand-line); color: var(--brand); }
+.admin-link:disabled { opacity: 0.5; cursor: default; }
+.admin-link--danger { color: var(--accent); }
+
+.admin-empty { padding: 26px 0; margin: 0; text-align: center; font-size: 12.5px; color: var(--ink-3); }
+
+/* 投稿关闭时的提示条：用品牌色变量，深色模式自动跟着变 */
+.banner--closed {
+  background: var(--brand-weak);
+  border-left-color: var(--brand-line);
+  color: var(--brand-ink);
+}
+
+@media (max-width: 680px) {
+  .admin { padding-top: 18px; }
+  .admin-card { padding: 18px; }
+  .admin-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .admin-row__acts { width: 100%; }
+  /* 窄屏下输入框和按钮各占一行，别挤在同一排 */
+  .admin-form { flex-direction: column; }
+  .admin-form .btn { width: 100%; }
+}
+

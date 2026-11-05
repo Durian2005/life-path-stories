@@ -72,6 +72,12 @@
       <button class="banner__act" id="btnDropDraft" type="button">丢弃这份草稿</button>
     </div>
 
+    <!-- 投稿开关（V1.4）：展示当天由管理员在管理页打开 -->
+    <div class="banner banner--closed" id="closedBanner" hidden>
+      <span>投稿现在没开着。展示当天会开放，先读读别人的路标吧。</span>
+      <a class="banner__act" href="index.html">回到所有故事</a>
+    </div>
+
     <form id="form" class="form" novalidate>
 
       <!-- 1 走在哪一段 -->
@@ -503,6 +509,18 @@ async function initEdit() {
 
 /* 编辑模式读的是服务端内容，新投稿读的是本地草稿，两者不会同时发生 */
 initEdit().finally(restoreDraft);
+
+/* 投稿开关（V1.4）：关着就提示并禁用「预览」，别让人白填一份。
+   后端 api_story_create 有硬拦截，这里只是提前说清楚。
+   编辑自己的旧帖不受影响，所以只在新建模式下生效。 */
+const btnSubmitEl = $('btnSubmit');
+api.publicConfig().then((c) => {
+  if (!c || c.publish_open !== false || editId) return;
+  $('closedBanner').hidden = false;
+  btnSubmitEl.disabled = true;
+  btnSubmitEl.textContent = '投稿还没开放';
+  $('formNote').textContent = '展示当天管理员会开放投稿，现在可以先读读别人的。';
+}).catch(() => { /* 拿不到就按开放处理 */ });
 </script>
 </body>
 </html>

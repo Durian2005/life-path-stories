@@ -255,6 +255,31 @@ const api = {
     return call('api_stats', {});
   },
 
+  /* A-26 公开配置（V1.4）：目前只有投稿开关。不需要会话，
+     拿不到时按「开放」处理——宁可多露一个入口，也别把入口误锁死 */
+  async publicConfig() {
+    return call('api_public_config', {});
+  },
+
+  /* ---------- 管理端（A-27 ~ A-29）：每次调用都带口令，不落会话 ----------
+     没有账号体系，所以「管理员」= 一个 bcrypt 口令。口令只存在页面内存里，
+     不进 localStorage；关掉标签页就没了。失败 8 次 / 5 分钟会锁住。 */
+
+  /* 当前开关状态 + 最近 30 条（含已隐藏的，方便恢复） */
+  async adminState(pass) {
+    return call('api_admin_state', { p_pass: pass });
+  },
+
+  /* 开放 / 关闭投稿。返回 { publish_open } */
+  async adminSetPublish(pass, open) {
+    return call('api_admin_set_publish', { p_pass: pass, p_open: Boolean(open) });
+  },
+
+  /* 处置单条：action = 'hide' | 'restore' | 'delete' */
+  async adminStory(pass, id, action) {
+    return call('api_admin_story', { p_pass: pass, p_story_id: id, p_action: action });
+  },
+
   /* A-19 点赞 / 取消点赞（V1.3，toggle）。返回 { liked, like_count }。
      作者会在首页铃铛里收到一条，但看不到是谁——接口也不返回操作者身份 */
   async like(id) {
